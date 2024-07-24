@@ -41,6 +41,11 @@ public class LoginActivity extends AppCompatActivity {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso);
 
+        // Hide the ActionBar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
         // Initialize the sign-in launcher
         ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),

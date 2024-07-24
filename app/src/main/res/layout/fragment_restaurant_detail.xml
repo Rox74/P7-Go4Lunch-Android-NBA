@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/restaurant_image"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:src="@drawable/restaurant_image"
+            android:scaleType="centerCrop"/>
+
+        <TextView
+            android:id="@+id/restaurant_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Restaurant Name"
+            android:textSize="24sp"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/restaurant_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Restaurant Address"
+            android:textSize="16sp"
+            android:paddingBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3">
+
+            <Button
+                android:id="@+id/call_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Call"/>
+
+            <Button
+                android:id="@+id/like_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Like"/>
+
+            <Button
+                android:id="@+id/website_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Website"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/restaurant_joining"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Joining Workmates:"
+            android:textSize="18sp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"/>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Add dynamic joining workmates here -->
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
