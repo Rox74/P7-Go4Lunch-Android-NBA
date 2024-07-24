@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name" translatable="false">Go4Lunch</string>
+    <string name="app_info">Find a nice restaurant and invite your co-workers for lunch!</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="default_web_client_id" translatable="false">821584108171-ghfjc0k77d7s1fba3lksjke0pr9sg09h.apps.googleusercontent.com</string>
+</resources>

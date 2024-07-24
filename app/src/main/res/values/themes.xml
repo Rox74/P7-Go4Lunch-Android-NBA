@@ -1,0 +1,27 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.Go4Lunch" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary and secondary colors. -->
+        <item name="colorPrimary">@color/prim_red</item>
+        <item name="colorPrimaryVariant">@color/second_red</item>
+        <item name="colorOnPrimary">@color/text_white</item>
+        <item name="colorSecondary">@color/prim_orange</item>
+        <item name="colorSecondaryVariant">@color/second_orange</item>
+        <item name="colorOnSecondary">@color/text_white</item>
+
+        <!-- Background and surface colors. -->
+        <item name="android:colorBackground">@color/background_white</item>
+        <item name="colorSurface">@color/background_white</item>
+        <item name="colorOnBackground">@color/text_black</item>
+        <item name="colorOnSurface">@color/text_black</item>
+
+        <!-- Toolbar style -->
+        <item name="toolbarStyle">@style/ToolbarStyle</item>
+    </style>
+
+    <!-- Toolbar style -->
+    <style name="ToolbarStyle" parent="Widget.MaterialComponents.Toolbar">
+        <item name="backgroundColor">@color/prim_red</item>
+        <item name="titleTextColor">@color/text_white</item>
+    </style>
+</resources>
