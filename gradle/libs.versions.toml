@@ -4,16 +4,17 @@ credentials = "1.2.2"
 drawerlayout = "1.2.0"
 firebaseAuth = "23.0.0"
 firebaseBom = "33.1.2"
-fragment = "1.8.1"
+fragment = "1.8.2"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 appcompat = "1.7.0"
-lifecycleCommon = "2.8.3"
+lifecycleCommon = "2.8.4"
 material = "1.12.0"
 navigationFragment = "2.7.7"
 navigationUi = "2.7.7"
 playServicesAuth = "21.2.0"
+playServicesIdentity = "18.1.0"
 
 [libraries]
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
@@ -32,6 +33,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "navigationUi" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+play-services-identity = { module = "com.google.android.gms:play-services-identity", version.ref = "playServicesIdentity" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
