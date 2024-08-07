@@ -1,14 +1,19 @@
 package com.nathba.go4lunch.ui;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -20,12 +25,12 @@ import com.google.firebase.auth.FirebaseUser;
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.AuthViewModel;
 import com.nathba.go4lunch.application.MainViewModel;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 
-/**
- * MainActivity is the primary activity of the application that handles
- * navigation between different views and displays user information.
- */
 public class MainActivity extends AppCompatActivity {
+
+    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
 
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
@@ -34,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private AuthViewModel authViewModel;
     private TextView navHeaderTitle;
     private TextView navHeaderSubtitle;
+    private ImageView navHeaderImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
         navHeaderTitle = navigationView.getHeaderView(0).findViewById(R.id.nav_header_title);
         navHeaderSubtitle = navigationView.getHeaderView(0).findViewById(R.id.nav_header_subtitle);
+        navHeaderImage = navigationView.getHeaderView(0).findViewById(R.id.nav_header_image);
 
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
             Fragment selectedFragment = null;
@@ -95,6 +102,11 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             checkLoginState();
+        }
+
+        // Check for location permissions
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSIONS_REQUEST_CODE);
         }
     }
 
@@ -156,6 +168,10 @@ public class MainActivity extends AppCompatActivity {
         if (user != null) {
             navHeaderTitle.setText(user.getDisplayName());
             navHeaderSubtitle.setText(user.getEmail());
+            Glide.with(this)
+                    .load(user.getPhotoUrl())
+                    .transform(new CircleCrop())
+                    .into(navHeaderImage);
         }
     }
 
@@ -165,5 +181,17 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults); // Call to super method
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted
+            } else {
+                // Permission denied
+            }
+        }
     }
 }

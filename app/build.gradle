@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace 'com.nathba.go4lunch'
-    compileSdk 35
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.nathba.go4lunch"
@@ -32,12 +32,21 @@ android {
 }
 
 dependencies {
+    implementation libs.core
     implementation libs.appcompat
     implementation libs.material
+    implementation libs.drawerlayout
+    implementation libs.fragment
+    implementation libs.navigation.fragment
+    implementation libs.navigation.ui
+    implementation libs.lifecycle.common
+
     testImplementation libs.junit
+
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 
+    // Firebase
     implementation platform(libs.firebase.bom)
     implementation libs.firebase.analytics
     implementation libs.play.services.auth
@@ -46,9 +55,14 @@ dependencies {
     implementation libs.credentials
     implementation libs.credentials.play.services.auth
 
-    implementation libs.drawerlayout
-    implementation libs.fragment
-    implementation libs.navigation.fragment
-    implementation libs.navigation.ui
-    implementation libs.lifecycle.common
+    // osmdroid for displaying OpenStreetMap tiles
+    implementation libs.osmdroid.android
+
+    // Retrofit for making HTTP requests
+    implementation libs.retrofit2.retrofit
+    implementation libs.converter.gson
+
+    // Map profile picture
+    implementation libs.glide
+    annotationProcessor libs.compiler
 }
