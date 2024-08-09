@@ -23,20 +23,22 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.nathba.go4lunch.R;
 
-import com.google.firebase.auth.FirebaseUser;
 import com.nathba.go4lunch.application.AuthViewModel;
+import com.nathba.go4lunch.application.MainViewModel;
 
 public class LoginFragment extends Fragment {
 
     private static final String TAG = "LoginFragment";
     private GoogleSignInClient googleSignInClient;
     private AuthViewModel authViewModel;
+    private MainViewModel mainViewModel;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_login, container, false);
 
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
@@ -72,7 +74,7 @@ public class LoginFragment extends Fragment {
         // Observe authentication state
         authViewModel.getUserLiveData().observe(getViewLifecycleOwner(), firebaseUser -> {
             if (firebaseUser != null) {
-                ((MainActivity) requireActivity()).onUserLoggedIn();
+                mainViewModel.checkLoginState();
             }
         });
 

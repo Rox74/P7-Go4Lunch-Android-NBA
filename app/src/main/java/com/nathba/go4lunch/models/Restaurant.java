@@ -1,19 +1,21 @@
 package com.nathba.go4lunch.models;
 
+import org.osmdroid.util.GeoPoint;
+
 public class Restaurant {
     private String name;
-    private String address;
+    private GeoPoint location;
 
-    public Restaurant(String name, String address) {
+    public Restaurant(String name, GeoPoint location) {
         this.name = name;
-        this.address = address;
+        this.location = location;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getAddress() {
-        return address;
+    public GeoPoint getLocation() {
+        return location;
     }
 }
