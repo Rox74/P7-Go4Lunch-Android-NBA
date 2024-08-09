@@ -13,7 +13,9 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.nathba.go4lunch.R;
@@ -31,191 +33,247 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import android.location.LocationListener;
+import android.widget.Toast;
 
-import org.osmdroid.api.IMapController;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class MapViewFragment extends Fragment implements LocationListener {
+
+    private static final String TAG = "MapViewFragment";
+    private static final int ZOOM_LEVEL = 16;
+    private static final int RESTAURANT_SEARCH_RADIUS = 1000; // en mètres
+    private static final float MIN_ACCURACY = 100; // en mètres
+    private static final long MIN_TIME_BETWEEN_UPDATES = 10000; // 10 secondes
 
     private MapView mapView;
     private OverpassApi overpassApi;
     private LocationManager locationManager;
     private Location currentLocation;
     private boolean isInitialLocationSet = false;
+    private boolean isMapInitialized = false; // Pour éviter de réinitialiser la carte inutilement
+    private boolean isViewCreated = false;
+    private Marker userLocationMarker;
+    private long lastUpdateTime = 0;
+    private List<OverpassResponse.Element> pendingRestaurants = new ArrayList<>();
+    private boolean isMapReady = false;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_map_view, container, false);
         mapView = view.findViewById(R.id.mapview);
-
-        // Initialiser OverpassApi
         overpassApi = new OverpassApi();
-
+        isViewCreated = true;
         return view;
+    }
+
+    private void initializeMapIfNeeded() {
+        if (isViewCreated && getUserVisibleHint() && !isMapInitialized && mapView != null) {
+            initializeMap();
+            requestLocationUpdates();
+        }
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            initializeMapIfNeeded();
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Initialiser la carte et demander les mises à jour de localisation
+        initializeMapIfNeeded();
         if (mapView != null) {
-            initializeMap();
+            mapView.onResume();
         }
-        requestLocationUpdates();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        // Arrêter les mises à jour de localisation pour économiser les ressources
+        if (mapView != null) {
+            mapView.onPause();
+        }
         if (locationManager != null) {
             locationManager.removeUpdates(this);
         }
     }
 
-    private void initializeMap() {
-        // Configurer OsmDroid User-Agent
-        Configuration.getInstance().setUserAgentValue("VotreAppName/1.0");
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mapView != null) {
+            mapView.onDetach();
+        }
+    }
 
-        // Configurer la source des tuiles et les contrôles multi-touch
+    private void initializeMap() {
+        if (getContext() == null) return;
+
+        Configuration.getInstance().setUserAgentValue(requireActivity().getPackageName());
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
+        mapView.getController().setZoom(ZOOM_LEVEL);
 
-        // Initialiser la carte avec une position par défaut (par exemple, Paris)
-        GeoPoint startPoint = new GeoPoint(48.8566, 2.3522); // Paris
-        IMapController mapController = mapView.getController();
-        mapController.setCenter(startPoint);
-        mapController.setZoom(10);
+        GeoPoint startPoint = new GeoPoint(48.8566, 2.3522);
+        mapView.getController().setCenter(startPoint);
+        isMapInitialized = true;
+        isMapReady = true;
+
+        // Affichez les restaurants en attente
+        if (!pendingRestaurants.isEmpty()) {
+            displayRestaurants(pendingRestaurants);
+            pendingRestaurants.clear();
+        }
     }
 
     private void requestLocationUpdates() {
-        locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+        if (getContext() == null) return; // Vérification du contexte
 
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
         }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BETWEEN_UPDATES, 0, this);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BETWEEN_UPDATES, 0, this);
 
-        // Demander des mises à jour de localisation
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, this);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, this);
+        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if (lastKnownLocation == null) {
+            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        }
+        if (lastKnownLocation != null && isLocationAccurate(lastKnownLocation)) {
+            onLocationChanged(lastKnownLocation);
+        }
     }
 
     @Override
     public void onLocationChanged(@NonNull Location location) {
-        Log.d("MapViewFragment", "Location changed: Latitude = " + location.getLatitude() + ", Longitude = " + location.getLongitude());
+        Log.d(TAG, "Location changed: Lat = " + location.getLatitude() + ", Lon = " + location.getLongitude() + ", Accuracy = " + location.getAccuracy());
 
-        if (mapView == null) {
-            Log.e("MapViewFragment", "MapView is null in onLocationChanged");
-            return;
-        }
-
-        // Vérifier si la localisation initiale est déjà définie
-        if (!isInitialLocationSet) {
+        if (isLocationAccurate(location) && isTimeDifferenceSignificant()) {
             currentLocation = location;
             updateMapLocation();
-            isInitialLocationSet = true;
+            if (!isInitialLocationSet) {
+                loadRestaurants();
+                isInitialLocationSet = true;
+            }
+            lastUpdateTime = System.currentTimeMillis();
         }
+    }
+
+    private boolean isLocationAccurate(Location location) {
+        return location.getAccuracy() <= MIN_ACCURACY;
+    }
+
+    private boolean isTimeDifferenceSignificant() {
+        return System.currentTimeMillis() - lastUpdateTime >= MIN_TIME_BETWEEN_UPDATES;
     }
 
     private void updateMapLocation() {
         if (currentLocation != null && mapView != null) {
             GeoPoint userLocation = new GeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
-            IMapController mapController = mapView.getController();
-            mapController.setCenter(userLocation);
-            mapController.setZoom(15); // Ajuster le niveau de zoom si nécessaire
-
-            // Ajouter un curseur pour "vous êtes ici"
-            Marker marker = createUserLocationMarker(userLocation);
-            if (marker != null) {
-                mapView.getOverlays().add(marker);
-            }
-
-            // Charger les restaurants
-            loadRestaurants();
+            mapView.getController().animateTo(userLocation);
+            updateUserLocationMarker(userLocation);
         } else {
-            Log.e("MapViewFragment", "updateMapLocation called but currentLocation or mapView is null");
+            Log.e(TAG, "MapView or currentLocation is null in updateMapLocation");
         }
     }
 
-    private Marker createUserLocationMarker(GeoPoint userLocation) {
-        if (mapView == null) {
-            Log.e("MapViewFragment", "MapView is null in createUserLocationMarker");
-            return null;
-        }
-
-        Marker userLocationMarker = new Marker(mapView);
-        userLocationMarker.setPosition(userLocation);
-        userLocationMarker.setIcon(getResources().getDrawable(R.drawable.user_location_icon)); // Remplacez par votre icône
-        userLocationMarker.setTitle("Vous êtes ici");
-        return userLocationMarker;
-    }
-
-    private void loadRestaurants() {
-        if (currentLocation == null) {
-            Log.d("MapViewFragment", "Current location is null.");
+    private void updateUserLocationMarker(GeoPoint userLocation) {
+        if (getContext() == null || mapView == null) {
+            Log.e(TAG, "Context or MapView is null in updateUserLocationMarker");
             return;
         }
 
-        String overpassQuery = String.format(
-                "[out:json];node[amenity=restaurant](around:1000,%f,%f);out;",
-                currentLocation.getLatitude(), currentLocation.getLongitude()
+        if (userLocationMarker == null) {
+            userLocationMarker = new Marker(mapView);
+            userLocationMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_user_location));
+            userLocationMarker.setTitle("Vous êtes ici");
+            mapView.getOverlays().add(userLocationMarker);
+        }
+        userLocationMarker.setPosition(userLocation);
+        mapView.invalidate();
+    }
+
+    private void loadRestaurants() {
+        if (currentLocation == null || mapView == null) {
+            Log.d(TAG, "Current location or MapView is null.");
+            return;
+        }
+
+        String overpassQuery = String.format(Locale.US,
+                "[out:json];node[\"amenity\"=\"restaurant\"](around:%d,%f,%f);out;",
+                RESTAURANT_SEARCH_RADIUS, currentLocation.getLatitude(), currentLocation.getLongitude()
         );
 
-        // Ajouter un log pour afficher la requête Overpass
-        Log.d("MapViewFragment", "Overpass Query: " + overpassQuery);
+        Log.d(TAG, "Overpass Query: " + overpassQuery);
 
-        Call<OverpassResponse> call = overpassApi.getRestaurants(overpassQuery);
-        call.enqueue(new Callback<OverpassResponse>() {
+        overpassApi.getRestaurants(overpassQuery).enqueue(new Callback<OverpassResponse>() {
             @Override
-            public void onResponse(Call<OverpassResponse> call, Response<OverpassResponse> response) {
-                if (response.isSuccessful()) {
-                    OverpassResponse overpassResponse = response.body();
-                    if (overpassResponse != null && overpassResponse.elements != null) {
-                        Log.d("MapViewFragment", "Response received with " + overpassResponse.elements.size() + " elements.");
-                        mapView.getOverlays().clear(); // Effacer les anciens marqueurs
-                        Marker marker = createUserLocationMarker(new GeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude()));
-                        if (marker != null) {
-                            mapView.getOverlays().add(marker);
-                        }
-
-                        for (OverpassResponse.Element element : overpassResponse.elements) {
-                            Log.d("MapViewFragment", "Element: " + element.tags.name + " at " + element.lat + ", " + element.lon);
-                            Marker restaurantMarker = new Marker(mapView);
-                            restaurantMarker.setPosition(new GeoPoint(element.lat, element.lon));
-                            restaurantMarker.setTitle(element.tags.name);
-                            mapView.getOverlays().add(restaurantMarker);
-                        }
-                        mapView.invalidate();
+            public void onResponse(@NonNull Call<OverpassResponse> call, @NonNull Response<OverpassResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    if (isMapReady) {
+                        displayRestaurants(response.body().elements);
                     } else {
-                        Log.d("MapViewFragment", "Response body is null or empty.");
+                        pendingRestaurants.addAll(response.body().elements);
                     }
                 } else {
-                    Log.d("MapViewFragment", "Response not successful: " + response.code());
-                    // Ajouter un log pour afficher le corps de la réponse en cas d'erreur
-                    Log.d("MapViewFragment", "Error response: " + response.errorBody());
+                    Log.e(TAG, "Error response: " + (response.errorBody() != null ? response.errorBody().toString() : "Unknown error"));
+                    showErrorToast(R.string.error_loading_restaurants);
                 }
             }
 
             @Override
-            public void onFailure(Call<OverpassResponse> call, Throwable t) {
-                Log.d("MapViewFragment", "Request failed: " + t.getMessage());
+            public void onFailure(@NonNull Call<OverpassResponse> call, @NonNull Throwable t) {
+                Log.e(TAG, "Request failed: " + t.getMessage(), t);
+                showErrorToast(R.string.error_loading_restaurants);
             }
         });
     }
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        // Pas nécessaire pour cette implémentation
+    private void displayRestaurants(List<OverpassResponse.Element> restaurants) {
+        if (!isMapReady || mapView == null) {
+            // Si la carte n'est pas prête, ajoutez les restaurants à la file d'attente
+            pendingRestaurants.addAll(restaurants);
+            return;
+        }
+
+        if (restaurants == null || restaurants.isEmpty()) {
+            Log.d(TAG, "No restaurants found");
+            return;
+        }
+
+        Log.d(TAG, "Displaying " + restaurants.size() + " restaurants");
+        if (mapView == null || !isMapInitialized) {
+            Log.d(TAG, "MapView is null or not initialized in displayRestaurants");
+            return;
+        }
+
+        for (OverpassResponse.Element restaurant : restaurants) {
+            Marker restaurantMarker = new Marker(mapView);
+            restaurantMarker.setPosition(new GeoPoint(restaurant.lat, restaurant.lon));
+            restaurantMarker.setTitle(restaurant.tags.name != null ? restaurant.tags.name : "Restaurant sans nom");
+            restaurantMarker.setSnippet("Restaurant");
+            restaurantMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker));
+            restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
+                // TODO: Ouvrir le fragment de détail du restaurant
+                Toast.makeText(requireContext(), "Restaurant sélectionné : " + marker.getTitle(), Toast.LENGTH_SHORT).show();
+                return true;
+            });
+            mapView.getOverlays().add(restaurantMarker);
+        }
+        mapView.invalidate();
     }
 
-    @Override
-    public void onProviderEnabled(@NonNull String provider) {
-        // Pas nécessaire pour cette implémentation
-    }
-
-    @Override
-    public void onProviderDisabled(@NonNull String provider) {
-        // Pas nécessaire pour cette implémentation
+    private void showErrorToast(@StringRes int messageResId) {
+        if (getContext() != null) {
+            Toast.makeText(requireContext(), messageResId, Toast.LENGTH_SHORT).show();
+        }
     }
 }

@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView navHeaderTitle;
     private TextView navHeaderSubtitle;
     private ImageView navHeaderImage;
+    public boolean isMapFragmentVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,10 +83,13 @@ public class MainActivity extends AppCompatActivity {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
             if (itemId == R.id.nav_map_view) {
+                isMapFragmentVisible = true;
                 selectedFragment = new MapViewFragment();
             } else if (itemId == R.id.nav_list_view) {
+                isMapFragmentVisible = false;
                 selectedFragment = new ListViewFragment();
             } else if (itemId == R.id.nav_workmates) {
+                isMapFragmentVisible = false;
                 selectedFragment = new WorkmatesFragment();
             }
 
@@ -127,10 +131,10 @@ public class MainActivity extends AppCompatActivity {
             updateUI(currentUser);
         }
 
-        // Show default fragment after login
+        // Montrez d'abord le fragment WorkmatesFragment au lieu de MapViewFragment
         if (getSupportFragmentManager().findFragmentById(R.id.fragment_container) instanceof LoginFragment) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new MapViewFragment())
+                    .replace(R.id.fragment_container, new WorkmatesFragment())
                     .commit();
             showMenusAndActionBar();
         }
