@@ -22,6 +22,11 @@ import com.nathba.go4lunch.application.MainViewModel;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 
+/**
+ * MainActivity class that serves as the main entry point of the application.
+ * Manages navigation between different fragments, handles authentication state,
+ * and updates the UI based on the current user.
+ */
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
@@ -35,16 +40,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Initialize the ViewModel
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
+        // Initialize UI components
         initializeViews();
+
+        // Setup DrawerLayout, BottomNavigationView, and NavigationView
         setupDrawerLayout();
         setupBottomNavigation();
         setupNavigationView();
+
+        // Observe ViewModel for changes
         observeViewModel();
 
+        // If there is no saved instance state, check login state and load the default fragment
         if (savedInstanceState == null) {
-            // Check login state and load the default fragment
             viewModel.checkLoginState();
             if (viewModel.getCurrentUser().getValue() != null) {
                 navigateToFragment(R.id.nav_map_view); // Load the map view by default
@@ -52,12 +63,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Initializes the UI components.
+     */
     private void initializeViews() {
         drawerLayout = findViewById(R.id.drawer_layout);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         navigationView = findViewById(R.id.navigation_view);
     }
 
+    /**
+     * Sets up the DrawerLayout and its toggle.
+     */
     private void setupDrawerLayout() {
         toggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
@@ -68,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Sets up the BottomNavigationView and its item selection listener.
+     */
     private void setupBottomNavigation() {
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
             viewModel.setSelectedNavigationItem(item.getItemId());
@@ -75,6 +95,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Sets up the NavigationView and its item selection listener.
+     */
     private void setupNavigationView() {
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -90,15 +113,26 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Observes changes in the ViewModel and updates the UI accordingly.
+     */
     private void observeViewModel() {
         viewModel.getCurrentUser().observe(this, this::updateUI);
         viewModel.getSelectedNavigationItem().observe(this, this::navigateToFragment);
     }
 
+    /**
+     * Updates the UI based on the current user.
+     * @param user The currently authenticated FirebaseUser.
+     */
     private void updateUI(FirebaseUser user) {
         if (user != null) {
             showMainContent();
             updateNavigationHeader(user);
+
+            // Add the user to Firestore as a Workmate
+            viewModel.addWorkmateToFirestore(user);
+
             // Ensure that the map fragment is displayed
             navigateToFragment(R.id.nav_map_view);
         } else {
@@ -106,6 +140,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Displays the main content of the activity and ensures that LoginFragment is removed.
+     */
     private void showMainContent() {
         bottomNavigationView.setVisibility(View.VISIBLE);
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
@@ -121,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Displays the LoginFragment and hides the main content.
+     */
     private void showLoginFragment() {
         bottomNavigationView.setVisibility(View.GONE);
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
@@ -133,6 +173,10 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
+    /**
+     * Updates the NavigationView header with the current user's information.
+     * @param user The currently authenticated FirebaseUser.
+     */
     private void updateNavigationHeader(FirebaseUser user) {
         View headerView = navigationView.getHeaderView(0);
         TextView navHeaderTitle = headerView.findViewById(R.id.nav_header_title);
@@ -147,6 +191,10 @@ public class MainActivity extends AppCompatActivity {
                 .into(navHeaderImage);
     }
 
+    /**
+     * Navigates to the specified fragment based on the selected item ID.
+     * @param itemId The ID of the selected menu item.
+     */
     private void navigateToFragment(int itemId) {
         Fragment selectedFragment = null;
         String fragmentTag = null;
@@ -155,10 +203,10 @@ public class MainActivity extends AppCompatActivity {
             selectedFragment = new MapViewFragment();
             fragmentTag = "MAP_VIEW_FRAGMENT";
         } else if (itemId == R.id.nav_list_view) {
-            selectedFragment = new ListViewFragment();
-            fragmentTag = "LIST_VIEW_FRAGMENT";
+            selectedFragment = new RestaurantListFragment();
+            fragmentTag = "RESTAURANT_LIST_FRAGMENT";
         } else if (itemId == R.id.nav_workmates) {
-            selectedFragment = new WorkmatesFragment();
+            selectedFragment = new WorkmateFragment();
             fragmentTag = "WORKMATES_FRAGMENT";
         }
 
@@ -171,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        // Handle drawer toggle clicks
         if (toggle.onOptionsItemSelected(item)) {
             return true;
         }

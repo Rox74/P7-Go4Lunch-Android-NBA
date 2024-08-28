@@ -26,9 +26,14 @@ import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.AuthViewModel;
 import com.nathba.go4lunch.application.MainViewModel;
 
+/**
+ * Fragment responsible for handling the Google Sign-In process.
+ * Manages authentication through Google and updates the authentication state.
+ */
 public class LoginFragment extends Fragment {
 
     private static final String TAG = "LoginFragment";
+
     private GoogleSignInClient googleSignInClient;
     private AuthViewModel authViewModel;
     private MainViewModel mainViewModel;
@@ -37,44 +42,54 @@ public class LoginFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_login, container, false);
 
+        // Initialize ViewModels
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
         mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
+        // Configure Google Sign-In options
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
+                .requestIdToken(getString(R.string.default_web_client_id)) // The client ID obtained from Google Cloud Console
+                .requestEmail() // Request email address
                 .build();
 
+        // Initialize GoogleSignInClient with the configured options
         googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso);
 
+        // Register activity result launcher for handling Google Sign-In activity results
         ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        // Handle the result of Google Sign-In
                         GoogleSignIn.getSignedInAccountFromIntent(result.getData())
                                 .addOnCompleteListener(task -> {
                                     if (task.isSuccessful()) {
                                         GoogleSignInAccount account = task.getResult();
                                         if (account != null) {
+                                            // Obtain Firebase authentication credentials from the Google Sign-In account
                                             AuthCredential firebaseCredential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+                                            // Authenticate with Firebase
                                             authViewModel.signInWithCredential(firebaseCredential);
                                         }
                                     } else {
+                                        // Log error if Google Sign-In fails
                                         Log.w(TAG, "Google Sign-In failed", task.getException());
                                     }
                                 });
                     }
                 });
 
+        // Set up click listener for Google Sign-In button
         view.findViewById(R.id.google_sign_in_button).setOnClickListener(v -> {
+            // Create sign-in intent and launch the sign-in activity
             Intent signInIntent = googleSignInClient.getSignInIntent();
             signInLauncher.launch(signInIntent);
         });
 
-        // Observe authentication state
+        // Observe authentication state and update the main view model if user is authenticated
         authViewModel.getUserLiveData().observe(getViewLifecycleOwner(), firebaseUser -> {
             if (firebaseUser != null) {
-                mainViewModel.checkLoginState();
+                mainViewModel.checkLoginState(); // Check and update login state in the main view model
             }
         });
 

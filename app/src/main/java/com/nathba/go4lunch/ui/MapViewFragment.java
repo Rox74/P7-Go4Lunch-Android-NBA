@@ -19,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.MapViewModel;
+import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
 
 import org.osmdroid.config.Configuration;
@@ -26,22 +27,33 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
 
 import android.location.LocationListener;
+import android.widget.Button;
 import android.widget.Toast;
+
+import android.graphics.drawable.Drawable;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 
 import java.util.List;
 
+/**
+ * Fragment that displays a map view using OpenStreetMap and handles user location updates.
+ */
 public class MapViewFragment extends Fragment implements LocationListener {
+
     private static final String TAG = "MapViewFragment";
     private static final int ZOOM_LEVEL = 16;
-    private static final float MIN_ACCURACY = 100; // en mètres
-    private static final long MIN_TIME_BETWEEN_UPDATES = 10000; // 10 secondes
+    private static final float MIN_ACCURACY = 100;
+    private static final long MIN_TIME_BETWEEN_UPDATES = 10000;
 
     private MapView mapView;
     private MapViewModel viewModel;
     private LocationManager locationManager;
     private Marker userLocationMarker;
+    private boolean isInitialCenteringDone = false;
 
     @Nullable
     @Override
@@ -54,27 +66,55 @@ public class MapViewFragment extends Fragment implements LocationListener {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Initialize the ViewModel
         viewModel = new ViewModelProvider(this).get(MapViewModel.class);
+
+        // Setup the map view
         initializeMap();
+
+        // Observe changes in the ViewModel
         observeViewModel();
+
+        // Request location updates from the system
         requestLocationUpdates();
+
+        // Setup geolocation button
+        Button btnGeolocate = view.findViewById(R.id.btn_geolocate);
+        btnGeolocate.setOnClickListener(v -> {
+            Location location = viewModel.getUserLocation().getValue();
+            if (location != null) {
+                updateUserLocationOnMap(location); // Recentre la carte sur la position de l'utilisateur
+            } else {
+                Toast.makeText(requireContext(), "La position de l'utilisateur est inconnue.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
+    /**
+     * Initializes the map view settings.
+     */
     private void initializeMap() {
         Configuration.getInstance().setUserAgentValue(requireActivity().getPackageName());
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
         mapView.getController().setZoom(ZOOM_LEVEL);
 
-        GeoPoint startPoint = new GeoPoint(48.8566, 2.3522);
+        GeoPoint startPoint = new GeoPoint(48.8566, 2.3522); // Default to Paris coordinates
         mapView.getController().setCenter(startPoint);
     }
 
+    /**
+     * Observes changes in the ViewModel and updates the map accordingly.
+     */
     private void observeViewModel() {
         viewModel.getRestaurants().observe(getViewLifecycleOwner(), this::displayRestaurants);
-        viewModel.getUserLocation().observe(getViewLifecycleOwner(), this::updateUserLocationOnMap);
+        viewModel.getLunches().observe(getViewLifecycleOwner(), lunches -> displayRestaurants(viewModel.getRestaurants().getValue(), lunches));
     }
 
+    /**
+     * Requests location updates from the LocationManager.
+     */
     private void requestLocationUpdates() {
         locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -93,20 +133,36 @@ public class MapViewFragment extends Fragment implements LocationListener {
         }
     }
 
+    /**
+     * Called when the location changes. Updates the ViewModel and map with the new location.
+     * @param location The updated location.
+     */
     @Override
     public void onLocationChanged(@NonNull Location location) {
         if (isLocationAccurate(location)) {
             viewModel.setUserLocation(location);
+            if (!isInitialCenteringDone) {
+                updateUserLocationOnMap(location);
+                isInitialCenteringDone = true; // Indicate that initial centering is done
+            }
         }
     }
 
+    /**
+     * Checks if the location accuracy is within the acceptable range.
+     * @param location The location to check.
+     * @return True if the location accuracy is acceptable, otherwise false.
+     */
     private boolean isLocationAccurate(Location location) {
         return location.getAccuracy() <= MIN_ACCURACY;
     }
 
+    /**
+     * Updates the user's location on the map. Adds or updates the marker representing the user's location.
+     * @param location The location to display on the map.
+     */
     private void updateUserLocationOnMap(Location location) {
         GeoPoint userLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
-        mapView.getController().animateTo(userLocation);
 
         if (userLocationMarker == null) {
             userLocationMarker = new Marker(mapView);
@@ -115,20 +171,79 @@ public class MapViewFragment extends Fragment implements LocationListener {
             mapView.getOverlays().add(userLocationMarker);
         }
         userLocationMarker.setPosition(userLocation);
+
+        // Recentre la carte sur la nouvelle position
+        mapView.getController().animateTo(userLocation);
         mapView.invalidate();
     }
 
+    /**
+     * Checks if there is a lunch associated with the given restaurant.
+     * @param lunches The list of lunches to check.
+     * @param restaurant The restaurant to check.
+     * @return True if there is a lunch associated with the restaurant, otherwise false.
+     */
+    private boolean hasLunch(List<Lunch> lunches, Restaurant restaurant) {
+        if (lunches == null) return false;
+
+        for (Lunch lunch : lunches) {
+            if (lunch.getRestaurantId() != null && lunch.getRestaurantId().equals(restaurant.getRestaurantId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Displays the restaurants on the map. Adds markers for each restaurant.
+     * @param restaurants The list of restaurants to display.
+     */
     private void displayRestaurants(List<Restaurant> restaurants) {
+        displayRestaurants(restaurants, viewModel.getLunches().getValue());
+    }
+
+    /**
+     * Displays the restaurants on the map, applying different colors to markers based on whether
+     * the restaurant is associated with a lunch.
+     * @param restaurants The list of restaurants to display.
+     * @param lunches The list of lunches.
+     */
+    private void displayRestaurants(List<Restaurant> restaurants, List<Lunch> lunches) {
+        if (restaurants == null) return;
+
+        // Remove all markers except for the user's location marker
+        List<Overlay> overlays = mapView.getOverlays();
+        for (int i = overlays.size() - 1; i >= 0; i--) {
+            if (overlays.get(i) instanceof Marker) {
+                Marker marker = (Marker) overlays.get(i);
+                if (!"Vous êtes ici".equals(marker.getTitle())) {
+                    overlays.remove(i);
+                }
+            }
+        }
+
         for (Restaurant restaurant : restaurants) {
             Marker restaurantMarker = new Marker(mapView);
             restaurantMarker.setPosition(restaurant.getLocation());
             restaurantMarker.setTitle(restaurant.getName());
             restaurantMarker.setSnippet("Restaurant");
-            restaurantMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker));
+
+            boolean hasLunch = hasLunch(lunches, restaurant);
+
+            // Set marker icon with color filter based on lunch association
+            Drawable markerIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker);
+
+            if (markerIcon != null) {
+                int color = hasLunch ? android.graphics.Color.GREEN : android.graphics.Color.RED;
+                markerIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+                restaurantMarker.setIcon(markerIcon);
+            }
+
             restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
                 Toast.makeText(requireContext(), "Restaurant sélectionné : " + marker.getTitle(), Toast.LENGTH_SHORT).show();
                 return true;
             });
+
             mapView.getOverlays().add(restaurantMarker);
         }
         mapView.invalidate();
