@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.MapViewModel;
@@ -100,16 +102,18 @@ public class MapViewFragment extends Fragment implements LocationListener {
         mapView.setMultiTouchControls(true);
         mapView.getController().setZoom(ZOOM_LEVEL);
 
-        GeoPoint startPoint = new GeoPoint(48.8566, 2.3522); // Default to Paris coordinates
+        GeoPoint startPoint = new GeoPoint(47.3123, 5.0914); // Default
         mapView.getController().setCenter(startPoint);
     }
 
-    /**
-     * Observes changes in the ViewModel and updates the map accordingly.
-     */
     private void observeViewModel() {
         viewModel.getRestaurants().observe(getViewLifecycleOwner(), this::displayRestaurants);
-        viewModel.getLunches().observe(getViewLifecycleOwner(), lunches -> displayRestaurants(viewModel.getRestaurants().getValue(), lunches));
+        viewModel.getLunches().observe(getViewLifecycleOwner(), lunches -> {
+            List<Restaurant> restaurants = viewModel.getRestaurants().getValue();
+            if (restaurants != null) {
+                displayRestaurants(restaurants, lunches); // Appel correct avec restaurants et lunches
+            }
+        });
     }
 
     /**
@@ -194,12 +198,37 @@ public class MapViewFragment extends Fragment implements LocationListener {
         return false;
     }
 
-    /**
-     * Displays the restaurants on the map. Adds markers for each restaurant.
-     * @param restaurants The list of restaurants to display.
-     */
     private void displayRestaurants(List<Restaurant> restaurants) {
-        displayRestaurants(restaurants, viewModel.getLunches().getValue());
+        for (Restaurant restaurant : restaurants) {
+            if (restaurant.getRestaurantId() == null) {
+                Log.e("MapViewFragment", "Restaurant ID is null for restaurant: " + restaurant.getName());
+                continue;  // Ignorer les restaurants sans ID valide
+            }
+
+            Marker restaurantMarker = new Marker(mapView);
+            restaurantMarker.setPosition(restaurant.getLocation());
+            restaurantMarker.setTitle(restaurant.getName());
+
+            restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
+                Log.d("MapViewFragment", "Restaurant selected: " + restaurant.getName() + " (ID: " + restaurant.getRestaurantId() + ")");
+
+                // Transmettre l'ID du restaurant au fragment de détail
+                RestaurantDetailFragment detailFragment = new RestaurantDetailFragment();
+                Bundle bundle = new Bundle();
+                bundle.putString("restaurant_id", restaurant.getRestaurantId());
+                detailFragment.setArguments(bundle);
+
+                // Remplacer le fragment actuel par le fragment de détail
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, detailFragment)
+                        .addToBackStack(null)
+                        .commit();
+
+                return true;
+            });
+
+            mapView.getOverlays().add(restaurantMarker);
+        }
     }
 
     /**

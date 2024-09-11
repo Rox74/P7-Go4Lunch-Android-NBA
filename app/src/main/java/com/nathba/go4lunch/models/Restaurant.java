@@ -28,6 +28,10 @@ public class Restaurant {
     // Geographical location of the restaurant
     private GeoPoint location;
 
+    private String phoneNumber;
+
+    private String yelpUrl;
+
     /**
      * Default constructor for Restaurant.
      * Initializes a new instance with default values.
@@ -159,6 +163,22 @@ public class Restaurant {
      */
     public void setLocation(GeoPoint location) {
         this.location = location;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getYelpUrl() {
+        return yelpUrl;
+    }
+
+    public void setYelpUrl(String yelpUrl) {
+        this.yelpUrl = yelpUrl;
     }
 
     /**

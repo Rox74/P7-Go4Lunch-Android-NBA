@@ -9,58 +9,135 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- Image du restaurant -->
         <ImageView
             android:id="@+id/restaurant_image"
             android:layout_width="match_parent"
             android:layout_height="200dp"
+            android:scaleType="centerCrop"
             android:src="@drawable/restaurant_image"
-            android:scaleType="centerCrop"/>
+            android:contentDescription="@string/restaurant_image_desc"/>
 
+        <!-- Nom du restaurant -->
         <TextView
             android:id="@+id/restaurant_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Restaurant Name"
             android:textSize="24sp"
+            android:textStyle="bold"
             android:paddingTop="8dp"
-            android:paddingBottom="4dp"/>
+            android:paddingBottom="4dp"
+            android:textColor="?attr/colorPrimary"/>
 
+        <!-- Adresse du restaurant -->
         <TextView
             android:id="@+id/restaurant_address"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Restaurant Address"
             android:textSize="16sp"
-            android:paddingBottom="8dp"/>
+            android:paddingBottom="8dp"
+            android:textColor="?attr/colorOnBackground"/>
 
+        <!-- Évaluation et distance -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- RatingBar pour l'évaluation -->
+            <RatingBar
+                android:id="@+id/restaurant_rating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:numStars="5"
+                android:stepSize="0.5"
+                android:isIndicator="true"
+                style="?android:attr/ratingBarStyleSmall"/>
+
+            <!-- Distance (dynamique) -->
+            <TextView
+                android:id="@+id/restaurant_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="1.5 km"
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnBackground"/>
+        </LinearLayout>
+
+        <!-- Boutons d'actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
             android:weightSum="3">
 
+            <!-- Bouton d'appel -->
             <Button
                 android:id="@+id/call_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Call"/>
+                android:drawableStart="@drawable/ic_call"
+                android:text="Call"
+                android:drawablePadding="8dp"
+                android:padding="10dp"
+                android:textColor="?attr/colorOnPrimary"
+                android:backgroundTint="?attr/colorPrimary"/>
 
+            <!-- Bouton Like -->
             <Button
                 android:id="@+id/like_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Like"/>
+                android:drawableStart="@drawable/ic_like"
+                android:text="Like"
+                android:drawablePadding="8dp"
+                android:padding="10dp"
+                android:textColor="?attr/colorOnPrimary"
+                android:backgroundTint="?attr/colorPrimary"/>
 
+            <!-- Bouton pour le site web -->
             <Button
                 android:id="@+id/website_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Website"/>
+                android:drawableStart="@drawable/ic_website"
+                android:text="Website"
+                android:drawablePadding="8dp"
+                android:padding="10dp"
+                android:textColor="?attr/colorOnPrimary"
+                android:backgroundTint="?attr/colorPrimary"/>
         </LinearLayout>
 
+        <!-- Horaires d'ouverture -->
+        <TextView
+            android:id="@+id/restaurant_hours"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Opening hours: 9:00 AM - 10:00 PM"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp"
+            android:textColor="?attr/colorOnBackground"/>
+
+        <!-- Bouton pour ajouter à Lunch -->
+        <Button
+            android:id="@+id/btn_add_lunch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ajouter à Lunch"
+            android:layout_marginTop="16dp"
+            android:textColor="?attr/colorOnPrimary"
+            android:backgroundTint="?attr/colorSecondary"/>
+
+        <!-- Liste des collègues qui rejoignent le lunch -->
         <TextView
             android:id="@+id/restaurant_joining"
             android:layout_width="match_parent"
@@ -68,15 +145,16 @@
             android:text="Joining Workmates:"
             android:textSize="18sp"
             android:paddingTop="16dp"
-            android:paddingBottom="8dp"/>
+            android:paddingBottom="8dp"
+            android:textColor="?attr/colorPrimary"/>
 
         <LinearLayout
+            android:id="@+id/joining_workmates_list"
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-
-            <!-- Add dynamic joining workmates here -->
-
+            <!-- Cette section sera remplie dynamiquement avec les collègues qui rejoignent -->
         </LinearLayout>
+
     </LinearLayout>
 </ScrollView>

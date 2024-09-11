@@ -19,4 +19,7 @@
     <string name="logout">Logout</string>
     <string name="error_loading_restaurants">Error loading restaurant data. Please try again later.</string>
     <string name="workmate_photo_desc">Workmate photo description</string>
+    <string name="yelp_api_key" translatable="false">Gr1q2Nxg931eJBKKPJ0J6pnMYETSOMqhrqqYNXnvUPk5H0Kms1KZJjIwTbt6dmvXWIDPKml0BYe0eUMl_5htSzrTQUjaeC0WXhRAsSA2H8a2iQORxYuV9D20jkDPZnYx</string>
+    <string name="restaurant_image_desc">Restaurant picture</string>
+
 </resources>
