@@ -24,9 +24,9 @@ public class WorkmateViewModel extends ViewModel {
      * Constructor for WorkmateViewModel.
      * Initializes the WorkmateRepository instance and fetches the list of workmates.
      */
-    public WorkmateViewModel() {
-        workmateRepository = new WorkmateRepository();
-        workmates = workmateRepository.getWorkmates();
+    public WorkmateViewModel(WorkmateRepository workmateRepository) {
+        this.workmateRepository = workmateRepository;
+        this.workmates = workmateRepository.getWorkmates();
     }
 
     /**

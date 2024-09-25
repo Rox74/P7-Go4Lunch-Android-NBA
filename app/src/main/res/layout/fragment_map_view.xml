@@ -14,12 +14,4 @@
         android:layout_height="wrap_content"
         android:text="Géolocaliser"
         android:layout_margin="16dp" />
-
-    <Button
-        android:id="@+id/action_map_to_detail"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Action map to detail"
-        android:layout_marginTop="66dp"
-        android:layout_marginStart="16dp"/>
 </FrameLayout>

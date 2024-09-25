@@ -25,6 +25,8 @@ import com.nathba.go4lunch.R;
 
 import com.nathba.go4lunch.application.AuthViewModel;
 import com.nathba.go4lunch.application.MainViewModel;
+import com.nathba.go4lunch.application.ViewModelFactory;
+import com.nathba.go4lunch.di.AppInjector;
 
 /**
  * Fragment responsible for handling the Google Sign-In process.
@@ -37,14 +39,18 @@ public class LoginFragment extends Fragment {
     private GoogleSignInClient googleSignInClient;
     private AuthViewModel authViewModel;
     private MainViewModel mainViewModel;
+    private ViewModelFactory viewModelFactory;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_login, container, false);
 
-        // Initialize ViewModels
-        authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
-        mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        // Obtain ViewModelFactory from AppInjector
+        viewModelFactory = AppInjector.getInstance().getViewModelFactory();
+
+        // Initialize AuthViewModel and MainViewModel using ViewModelProvider with the ViewModelFactory
+        authViewModel = new ViewModelProvider(this, viewModelFactory).get(AuthViewModel.class);
+        mainViewModel = new ViewModelProvider(this, viewModelFactory).get(MainViewModel.class);
 
         // Configure Google Sign-In options
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)

@@ -15,7 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.nathba.go4lunch.R;
+import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.application.WorkmateViewModel;
+import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.models.Workmate;
 
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 public class WorkmateFragment extends Fragment {
 
     private WorkmateViewModel workmateViewModel;
+    private ViewModelFactory viewModelFactory;
     private RecyclerView recyclerView;
     private WorkmateAdapter workmateAdapter;
 
@@ -35,12 +38,16 @@ public class WorkmateFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_workmate, container, false);
 
+        // Obtain ViewModelFactory from AppInjector
+        viewModelFactory = AppInjector.getInstance().getViewModelFactory();
+
+        // Initialize WorkmateViewModel using ViewModelProvider with ViewModelFactory
+        workmateViewModel = new ViewModelProvider(this, viewModelFactory).get(WorkmateViewModel.class);
+
         recyclerView = view.findViewById(R.id.recycler_view_workmates);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         workmateAdapter = new WorkmateAdapter(new ArrayList<>());
         recyclerView.setAdapter(workmateAdapter);
-
-        workmateViewModel = new ViewModelProvider(this).get(WorkmateViewModel.class);
 
         // Observe changes in the list of workmates
         workmateViewModel.getWorkmates().observe(getViewLifecycleOwner(), workmates -> {

@@ -21,6 +21,8 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.MapViewModel;
+import com.nathba.go4lunch.application.ViewModelFactory;
+import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
 
@@ -52,16 +54,24 @@ public class MapViewFragment extends Fragment implements LocationListener {
     private static final long MIN_TIME_BETWEEN_UPDATES = 10000;
 
     private MapView mapView;
-    private MapViewModel viewModel;
+    private MapViewModel mapViewModel;
+    private ViewModelFactory viewModelFactory;
     private LocationManager locationManager;
     private Marker userLocationMarker;
     private boolean isInitialCenteringDone = false;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_map_view, container, false);
+
+        // Initialize the MapView
         mapView = view.findViewById(R.id.mapview);
+        mapView.setTileSource(TileSourceFactory.MAPNIK);
+        mapView.setBuiltInZoomControls(true);
+        mapView.setMultiTouchControls(true);
+
         return view;
     }
 
@@ -69,8 +79,11 @@ public class MapViewFragment extends Fragment implements LocationListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize the ViewModel
-        viewModel = new ViewModelProvider(this).get(MapViewModel.class);
+        // Obtain ViewModelFactory from AppInjector
+        viewModelFactory = AppInjector.getInstance().getViewModelFactory();
+
+        // Initialize MapViewModel using ViewModelFactory
+        mapViewModel = new ViewModelProvider(this, viewModelFactory).get(MapViewModel.class);
 
         // Setup the map view
         initializeMap();
@@ -84,7 +97,7 @@ public class MapViewFragment extends Fragment implements LocationListener {
         // Setup geolocation button
         Button btnGeolocate = view.findViewById(R.id.btn_geolocate);
         btnGeolocate.setOnClickListener(v -> {
-            Location location = viewModel.getUserLocation().getValue();
+            Location location = mapViewModel.getUserLocation().getValue();
             if (location != null) {
                 updateUserLocationOnMap(location); // Recentre la carte sur la position de l'utilisateur
             } else {
@@ -107,9 +120,9 @@ public class MapViewFragment extends Fragment implements LocationListener {
     }
 
     private void observeViewModel() {
-        viewModel.getRestaurants().observe(getViewLifecycleOwner(), this::displayRestaurants);
-        viewModel.getLunches().observe(getViewLifecycleOwner(), lunches -> {
-            List<Restaurant> restaurants = viewModel.getRestaurants().getValue();
+        mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), this::displayRestaurants);
+        mapViewModel.getLunches().observe(getViewLifecycleOwner(), lunches -> {
+            List<Restaurant> restaurants = mapViewModel.getRestaurants().getValue();
             if (restaurants != null) {
                 displayRestaurants(restaurants, lunches); // Appel correct avec restaurants et lunches
             }
@@ -143,8 +156,8 @@ public class MapViewFragment extends Fragment implements LocationListener {
      */
     @Override
     public void onLocationChanged(@NonNull Location location) {
-        if (isLocationAccurate(location)) {
-            viewModel.setUserLocation(location);
+        if (isLocationAccurate(location) && mapView != null) {
+            mapViewModel.setUserLocation(location);
             if (!isInitialCenteringDone) {
                 updateUserLocationOnMap(location);
                 isInitialCenteringDone = true; // Indicate that initial centering is done
@@ -161,24 +174,17 @@ public class MapViewFragment extends Fragment implements LocationListener {
         return location.getAccuracy() <= MIN_ACCURACY;
     }
 
-    /**
-     * Updates the user's location on the map. Adds or updates the marker representing the user's location.
-     * @param location The location to display on the map.
-     */
     private void updateUserLocationOnMap(Location location) {
-        GeoPoint userLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
-
-        if (userLocationMarker == null) {
-            userLocationMarker = new Marker(mapView);
-            userLocationMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_user_location));
-            userLocationMarker.setTitle("Vous êtes ici");
-            mapView.getOverlays().add(userLocationMarker);
+        if (mapView != null) {
+            GeoPoint userLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
+            Marker marker = new Marker(mapView);
+            marker.setPosition(userLocation);
+            marker.setTitle("You are here");
+            mapView.getOverlays().add(marker);
+            mapView.invalidate(); // Refresh the map
+        } else {
+            Log.e("MapViewFragment", "MapView is null, cannot update user location");
         }
-        userLocationMarker.setPosition(userLocation);
-
-        // Recentre la carte sur la nouvelle position
-        mapView.getController().animateTo(userLocation);
-        mapView.invalidate();
     }
 
     /**

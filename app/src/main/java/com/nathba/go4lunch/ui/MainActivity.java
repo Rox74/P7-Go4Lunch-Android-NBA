@@ -21,6 +21,8 @@ import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.MainViewModel;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.nathba.go4lunch.application.ViewModelFactory;
+import com.nathba.go4lunch.di.AppInjector;
 
 /**
  * MainActivity class that serves as the main entry point of the application.
@@ -33,15 +35,19 @@ public class MainActivity extends AppCompatActivity {
     private ActionBarDrawerToggle toggle;
     private BottomNavigationView bottomNavigationView;
     private NavigationView navigationView;
-    private MainViewModel viewModel;
+    private MainViewModel mainViewModel;
+    private ViewModelFactory viewModelFactory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize the ViewModel
-        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        // Obtain ViewModelFactory from AppInjector
+        viewModelFactory = AppInjector.getInstance().getViewModelFactory();
+
+        // Initialize MainViewModel using ViewModelFactory
+        mainViewModel = new ViewModelProvider(this, viewModelFactory).get(MainViewModel.class);
 
         // Initialize UI components
         initializeViews();
@@ -56,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
 
         // If there is no saved instance state, check login state and load the default fragment
         if (savedInstanceState == null) {
-            viewModel.checkLoginState();
-            if (viewModel.getCurrentUser().getValue() != null) {
+            mainViewModel.checkLoginState();
+            if (mainViewModel.getCurrentUser().getValue() != null) {
                 navigateToFragment(R.id.nav_map_view); // Load the map view by default
             }
         }
@@ -90,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void setupBottomNavigation() {
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
-            viewModel.setSelectedNavigationItem(item.getItemId());
+            mainViewModel.setSelectedNavigationItem(item.getItemId());
             return true;
         });
     }
@@ -106,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_settings) {
                 // Handle "Settings" option
             } else if (itemId == R.id.nav_logout) {
-                viewModel.signOut();
+                mainViewModel.signOut();
             }
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
@@ -117,8 +123,8 @@ public class MainActivity extends AppCompatActivity {
      * Observes changes in the ViewModel and updates the UI accordingly.
      */
     private void observeViewModel() {
-        viewModel.getCurrentUser().observe(this, this::updateUI);
-        viewModel.getSelectedNavigationItem().observe(this, this::navigateToFragment);
+        mainViewModel.getCurrentUser().observe(this, this::updateUI);
+        mainViewModel.getSelectedNavigationItem().observe(this, this::navigateToFragment);
     }
 
     /**
@@ -131,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
             updateNavigationHeader(user);
 
             // Add the user to Firestore as a Workmate
-            viewModel.addWorkmateToFirestore(user);
+            mainViewModel.addWorkmateToFirestore(user);
 
             // Ensure that the map fragment is displayed
             navigateToFragment(R.id.nav_map_view);

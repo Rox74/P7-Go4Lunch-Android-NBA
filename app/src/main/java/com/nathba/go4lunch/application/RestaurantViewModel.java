@@ -14,9 +14,9 @@ public class RestaurantViewModel extends ViewModel {
     private final RestaurantRepository restaurantRepository;
     private LiveData<List<Restaurant>> restaurants;
 
-    public RestaurantViewModel() {
-        restaurantRepository = new RestaurantRepository();
-        restaurants = restaurantRepository.getRestaurants(); // Appel à getRestaurants
+    public RestaurantViewModel(RestaurantRepository restaurantRepository) {
+        this.restaurantRepository = restaurantRepository;
+        this.restaurants = restaurantRepository.getRestaurants();
     }
 
     public LiveData<List<Restaurant>> getRestaurants() {

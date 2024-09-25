@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.api.OverpassApi;
 import com.nathba.go4lunch.models.Restaurant;
+import com.nathba.go4lunch.repository.LunchRepository;
+import com.nathba.go4lunch.repository.MapRepository;
 import com.nathba.go4lunch.repository.RepositoryCallback;
 import com.nathba.go4lunch.repository.RestaurantRepository;
 
@@ -18,29 +20,17 @@ import java.util.List;
 
 public class MapViewModel extends ViewModel {
 
-    private final RestaurantRepository restaurantRepository;
-    private final MutableLiveData<List<Restaurant>> restaurants = new MutableLiveData<>();
+    private final MapRepository mapRepository;
+    private final LunchRepository lunchRepository;
+    private final LiveData<List<Restaurant>> restaurants;
     private final MutableLiveData<Location> userLocation = new MutableLiveData<>();
-    private final MutableLiveData<List<Lunch>> lunches = new MutableLiveData<>(new ArrayList<>());
+    private final LiveData<List<Lunch>> lunches;
 
-    public MapViewModel() {
-        restaurantRepository = new RestaurantRepository();
-        loadRestaurants();
-    }
-
-    // Charger les restaurants (une seule fois au démarrage)
-    private void loadRestaurants() {
-        restaurantRepository.fetchRestaurantsFromApi(new RepositoryCallback<List<Restaurant>>() {
-            @Override
-            public void onSuccess(List<Restaurant> data) {
-                restaurants.postValue(data);  // Mettre à jour les restaurants
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                Log.e("MapViewModel", "Erreur lors de la récupération des restaurants", t);
-            }
-        });
+    public MapViewModel(MapRepository mapRepository, LunchRepository lunchRepository) {
+        this.mapRepository = mapRepository;
+        this.lunchRepository = lunchRepository;
+        this.restaurants = mapRepository.getRestaurants();
+        this.lunches = lunchRepository.getLunches();
     }
 
     public LiveData<List<Restaurant>> getRestaurants() {
@@ -56,6 +46,6 @@ public class MapViewModel extends ViewModel {
     }
 
     public LiveData<List<Lunch>> getLunches() {
-        return lunches;
+        return lunches;  // Exposer la liste des lunchs
     }
 }

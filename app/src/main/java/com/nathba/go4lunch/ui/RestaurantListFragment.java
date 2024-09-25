@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.RestaurantViewModel;
+import com.nathba.go4lunch.application.ViewModelFactory;
+import com.nathba.go4lunch.di.AppInjector;
 
 /**
  * A Fragment that displays a list of restaurants using a RecyclerView.
@@ -22,6 +24,7 @@ import com.nathba.go4lunch.application.RestaurantViewModel;
 public class RestaurantListFragment extends Fragment {
 
     private RestaurantViewModel restaurantViewModel;
+    private ViewModelFactory viewModelFactory;
     private RecyclerView recyclerView;
     private RestaurantAdapter adapter;
 
@@ -32,14 +35,17 @@ public class RestaurantListFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_restaurant_list, container, false);
 
+        // Obtain ViewModelFactory from AppInjector
+        viewModelFactory = AppInjector.getInstance().getViewModelFactory();
+
+        // Initialize RestaurantViewModel using ViewModelProvider with ViewModelFactory
+        restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
+
         // Initialize the RecyclerView
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new RestaurantAdapter();
         recyclerView.setAdapter(adapter);
-
-        // Initialize the ViewModel
-        restaurantViewModel = new ViewModelProvider(this).get(RestaurantViewModel.class);
 
         // Observe the restaurant data from the ViewModel
         restaurantViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {

@@ -16,7 +16,7 @@ import java.util.List;
 public class LunchViewModel extends ViewModel {
 
     // Repository for managing lunch data
-    private final LunchRepository repository;
+    private final LunchRepository lunchRepository;
 
     // LiveData to hold the list of lunches
     private final LiveData<List<Lunch>> lunches;
@@ -25,9 +25,9 @@ public class LunchViewModel extends ViewModel {
      * Constructor for LunchViewModel.
      * Initializes the LunchRepository and fetches the list of lunches.
      */
-    public LunchViewModel() {
-        repository = new LunchRepository(); // Initialize the repository
-        lunches = repository.getLunches(); // Get the LiveData of lunches from the repository
+    public LunchViewModel(LunchRepository lunchRepository) {
+        this.lunchRepository = lunchRepository;
+        this.lunches = lunchRepository.getLunches();
     }
 
     /**
@@ -47,6 +47,6 @@ public class LunchViewModel extends ViewModel {
      * @param lunch The Lunch object to be added.
      */
     public void addLunch(Lunch lunch) {
-        repository.addLunch(lunch); // Add the lunch item to the repository
+        lunchRepository.addLunch(lunch); // Add the lunch item to the repository
     }
 }
