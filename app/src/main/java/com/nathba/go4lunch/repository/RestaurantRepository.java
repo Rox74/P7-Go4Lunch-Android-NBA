@@ -138,6 +138,9 @@ public class RestaurantRepository {
                 .addOnSuccessListener(aVoid -> {
                     // Une fois le lunch sauvegardé, sauvegarder le restaurant si nécessaire
                     addRestaurantToFirestore(restaurant);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("RestaurantRepository", "Erreur lors de l'ajout du lunch", e);
                 });
     }
 
@@ -145,8 +148,12 @@ public class RestaurantRepository {
         FirebaseFirestore.getInstance().collection("restaurants")
                 .document(restaurant.getRestaurantId())
                 .set(restaurant)
-                .addOnSuccessListener(aVoid -> Log.d("RestaurantRepository", "Restaurant ajouté avec succès"))
-                .addOnFailureListener(e -> Log.e("RestaurantRepository", "Erreur lors de l'ajout du restaurant", e));
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("RestaurantRepository", "Restaurant ajouté avec succès");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("RestaurantRepository", "Erreur lors de l'ajout du restaurant", e);
+                });
     }
 
     private String buildOverpassQuery(double latitude, double longitude, int radius) {
