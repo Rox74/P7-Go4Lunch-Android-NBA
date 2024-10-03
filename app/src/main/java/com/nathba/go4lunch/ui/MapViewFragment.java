@@ -17,7 +17,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.fragment.NavHostFragment;
 
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.MapViewModel;
@@ -43,6 +42,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,6 +61,7 @@ public class MapViewFragment extends Fragment implements LocationListener {
     private LocationManager locationManager;
     private Marker userLocationMarker;
     private boolean isInitialCenteringDone = false;
+    private List<Restaurant> restaurantList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -207,58 +208,9 @@ public class MapViewFragment extends Fragment implements LocationListener {
     }
 
     private void displayRestaurants(List<Restaurant> restaurants) {
-        for (Restaurant restaurant : restaurants) {
-            if (restaurant.getRestaurantId() == null) {
-                Log.e("MapViewFragment", "Restaurant ID is null for restaurant: " + restaurant.getName());
-                continue;
-            }
-
-            Marker restaurantMarker = new Marker(mapView);
-            restaurantMarker.setPosition(restaurant.getLocation());
-            restaurantMarker.setTitle(restaurant.getName());
-
-            restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
-                Log.d("MapViewFragment", "Restaurant selected: " + restaurant.getName());
-
-                // Récupérer les coordonnées GPS et le nom du restaurant
-                GeoPoint location = restaurant.getLocation();
-                String restaurantName = restaurant.getName();
-
-                // Appel à Yelp pour obtenir plus de détails
-                fetchYelpDetails(restaurant.getRestaurantId(), location, restaurantName);
-
-                return true;
-            });
-
-            mapView.getOverlays().add(restaurantMarker);
-        }
-    }
-
-    private void fetchYelpDetails(String restaurantId, GeoPoint location, String restaurantName) {
-        RestaurantRepository restaurantRepository = new RestaurantRepository();
-        restaurantRepository.getRestaurantDetails(restaurantId, location, restaurantName, new RepositoryCallback<Restaurant>() {
-            @Override
-            public void onSuccess(Restaurant restaurant) {
-                Log.d("MapViewFragment", "Yelp details retrieved successfully for: " + restaurant.getName() + " ," + restaurant.getAddress() + " ," + restaurant.getPhoneNumber() + " ," + restaurant.getRating() + " ," + restaurant.getPhotoUrl());
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                Log.e("MapViewFragment", "Failed to retrieve Yelp details: " + t.getMessage());
-            }
-        });
-    }
-
-    /**
-     * Displays the restaurants on the map, applying different colors to markers based on whether
-     * the restaurant is associated with a lunch.
-     * @param restaurants The list of restaurants to display.
-     * @param lunches The list of lunches.
-     */
-    private void displayRestaurants(List<Restaurant> restaurants, List<Lunch> lunches) {
         if (restaurants == null) return;
 
-        // Remove all markers except for the user's location marker
+        // Effacer les anciens marqueurs, sauf celui de la position de l'utilisateur
         List<Overlay> overlays = mapView.getOverlays();
         for (int i = overlays.size() - 1; i >= 0; i--) {
             if (overlays.get(i) instanceof Marker) {
@@ -269,37 +221,119 @@ public class MapViewFragment extends Fragment implements LocationListener {
             }
         }
 
+        // Ajouter les nouveaux marqueurs
         for (Restaurant restaurant : restaurants) {
-            Marker restaurantMarker = new Marker(mapView);
-            restaurantMarker.setPosition(restaurant.getLocation());
-            restaurantMarker.setTitle(restaurant.getName());
-            restaurantMarker.setSnippet("Restaurant");
+            setupRestaurantMarker(restaurant, false);  // Aucun lunch n'est associé dans cette version
+        }
 
-            boolean hasLunch = hasLunch(lunches, restaurant);
+        mapView.invalidate();  // Actualiser la carte
+    }
 
-            // Set marker icon with color filter based on lunch association
-            Drawable markerIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker);
+    private void fetchYelpDetails(String restaurantId, GeoPoint location, String restaurantName) {
+        RestaurantRepository restaurantRepository = new RestaurantRepository();
 
-            if (markerIcon != null) {
-                int color = hasLunch ? android.graphics.Color.GREEN : android.graphics.Color.RED;
-                markerIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-                restaurantMarker.setIcon(markerIcon);
+        // Appel à Yelp pour obtenir les détails
+        restaurantRepository.getRestaurantDetails(restaurantId, location, restaurantName, new RepositoryCallback<Restaurant>() {
+            @Override
+            public void onSuccess(Restaurant restaurant) {
+                // Si on récupère des détails depuis Yelp, on ouvre la page de détails avec ces infos
+                openRestaurantDetailFragment(restaurant);
             }
 
-            restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
-                Toast.makeText(requireContext(), "Restaurant sélectionné : " + marker.getTitle(), Toast.LENGTH_SHORT).show();
-                return true;
-            });
+            @Override
+            public void onError(Throwable t) {
+                // Si on ne peut pas obtenir les détails via Yelp, utiliser les infos basiques
+                Log.e("MapViewFragment", "Failed to retrieve Yelp details, using basic info");
+                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, null, null, 0, location);
+                openRestaurantDetailFragment(basicRestaurant);
+                Toast.makeText(requireContext(), "Yelp details not available, using basic info", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
-            mapView.getOverlays().add(restaurantMarker);
+    // Méthode pour ouvrir la page de détails du restaurant
+    private void openRestaurantDetailFragment(Restaurant restaurant) {
+        // Préparer le bundle avec les infos du restaurant
+        Bundle bundle = new Bundle();
+        bundle.putString("restaurantId", restaurant.getRestaurantId());
+        bundle.putString("restaurantName", restaurant.getName());
+        bundle.putString("restaurantAddress", restaurant.getAddress());
+        bundle.putString("restaurantPhotoUrl", restaurant.getPhotoUrl());
+        bundle.putDouble("restaurantRating", restaurant.getRating());
+        bundle.putDouble("latitude", restaurant.getLocation().getLatitude());
+        bundle.putDouble("longitude", restaurant.getLocation().getLongitude());
+
+        // Créer le fragment de détail et lui passer le bundle
+        RestaurantDetailFragment fragment = new RestaurantDetailFragment();
+        fragment.setArguments(bundle);
+
+        // Remplacer le fragment actuel par le fragment de détails
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    private void displayRestaurants(List<Restaurant> restaurants, List<Lunch> lunches) {
+        if (restaurants == null) return;
+
+        // Effacer les anciens marqueurs, sauf celui de la position de l'utilisateur
+        List<Overlay> overlays = mapView.getOverlays();
+        for (int i = overlays.size() - 1; i >= 0; i--) {
+            if (overlays.get(i) instanceof Marker) {
+                Marker marker = (Marker) overlays.get(i);
+                if (!"Vous êtes ici".equals(marker.getTitle())) {
+                    overlays.remove(i);
+                }
+            }
         }
-        mapView.invalidate();
+
+        // Ajouter les nouveaux marqueurs
+        for (Restaurant restaurant : restaurants) {
+            boolean hasLunch = hasLunch(lunches, restaurant);  // Vérifier si le restaurant est associé à un lunch
+            setupRestaurantMarker(restaurant, hasLunch);  // Utiliser la méthode utilitaire
+        }
+
+        mapView.invalidate();  // Actualiser la carte
+    }
+
+    private void setupRestaurantMarker(Restaurant restaurant, boolean hasLunch) {
+        Marker restaurantMarker = new Marker(mapView);
+        restaurantMarker.setPosition(restaurant.getLocation());
+        restaurantMarker.setTitle(restaurant.getName());
+
+        // Définir l'icône du marqueur en fonction de si le restaurant est associé à un lunch
+        Drawable markerIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker);
+
+        if (markerIcon != null) {
+            int color = hasLunch ? android.graphics.Color.GREEN : android.graphics.Color.RED;
+            markerIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+            restaurantMarker.setIcon(markerIcon);
+        }
+
+        // Rendre le marqueur cliquable
+        restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
+            GeoPoint location = restaurant.getLocation();
+            String restaurantName = restaurant.getName();
+            fetchYelpDetails(restaurant.getRestaurantId(), location, restaurantName); // Détails du restaurant via Yelp
+            return true;
+        });
+
+        mapView.getOverlays().add(restaurantMarker);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         mapView.onResume();
+
+        // Restaurer les restaurants et leurs marqueurs sur la carte
+        if (!restaurantList.isEmpty()) {
+            displayRestaurants(restaurantList, mapViewModel.getLunches().getValue());
+        } else {
+            // Si la liste est vide, la recharger (optionnel)
+            mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), this::displayRestaurants);
+        }
     }
 
     @Override
