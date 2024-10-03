@@ -19,6 +19,10 @@ public class RestaurantViewModel extends ViewModel {
         this.restaurants = restaurantRepository.getRestaurants();
     }
 
+    public LiveData<List<Lunch>> getLunchesForRestaurantToday(String restaurantId) {
+        return restaurantRepository.getLunchesForRestaurantToday(restaurantId);
+    }
+
     public LiveData<List<Restaurant>> getRestaurants() {
         return restaurants;
     }

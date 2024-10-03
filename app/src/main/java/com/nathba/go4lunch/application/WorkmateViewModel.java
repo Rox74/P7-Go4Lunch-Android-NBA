@@ -39,6 +39,10 @@ public class WorkmateViewModel extends ViewModel {
         return workmates;
     }
 
+    public LiveData<Workmate> getWorkmateById(String workmateId) {
+        return workmateRepository.getWorkmateById(workmateId);
+    }
+
     /**
      * Adds a new workmate to the repository.
      *

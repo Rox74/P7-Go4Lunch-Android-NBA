@@ -13,10 +13,13 @@ import java.util.List;
 import com.google.firebase.firestore.CollectionReference;
 
 public class WorkmateRepository {
+
     private final CollectionReference workmatesCollection;
+    private final FirebaseFirestore firestore;
 
     public WorkmateRepository(FirebaseFirestore firestore) {
         workmatesCollection = firestore.collection("workmates");
+        this.firestore = firestore;
     }
 
     public LiveData<List<Workmate>> getWorkmates() {
@@ -41,5 +44,24 @@ public class WorkmateRepository {
 
     public void addWorkmate(Workmate workmate) {
         workmatesCollection.document(workmate.getWorkmateId()).set(workmate);
+    }
+
+    public LiveData<Workmate> getWorkmateById(String workmateId) {
+        MutableLiveData<Workmate> workmateLiveData = new MutableLiveData<>();
+
+        firestore.collection("workmates")
+                .document(workmateId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Workmate workmate = documentSnapshot.toObject(Workmate.class);
+                        workmateLiveData.setValue(workmate);
+                    } else {
+                        workmateLiveData.setValue(null);
+                    }
+                })
+                .addOnFailureListener(e -> workmateLiveData.setValue(null));
+
+        return workmateLiveData;
     }
 }

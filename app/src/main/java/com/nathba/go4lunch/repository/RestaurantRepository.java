@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.nathba.go4lunch.api.OverpassApi;
 import com.nathba.go4lunch.api.YelpApi;
 import com.nathba.go4lunch.models.Lunch;
@@ -16,6 +17,8 @@ import com.nathba.go4lunch.models.YelpBusinessResponse;
 import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -28,10 +31,12 @@ public class RestaurantRepository {
     private final OverpassApi overpassApi;
     private final YelpApi yelpApi;
     private List<Restaurant> cachedRestaurants = new ArrayList<>(); // Cache des restaurants
+    private final FirebaseFirestore firestore;
 
     public RestaurantRepository() {
         overpassApi = new OverpassApi();
         yelpApi = new YelpApi();
+        firestore = FirebaseFirestore.getInstance();
     }
 
     public LiveData<List<Restaurant>> getRestaurants() {
@@ -160,5 +165,38 @@ public class RestaurantRepository {
         return String.format(Locale.US,
                 "[out:json];node[\"amenity\"=\"restaurant\"](around:%d,%f,%f);out;",
                 radius, latitude, longitude);
+    }
+
+    public LiveData<List<Lunch>> getLunchesForRestaurantToday(String restaurantId) {
+        MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
+        Date today = getToday();  // Récupérer la date d'aujourd'hui sans l'heure
+
+        firestore.collection("lunches")
+                .whereEqualTo("restaurantId", restaurantId)
+                .whereGreaterThanOrEqualTo("date", today)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Lunch> lunches = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Lunch lunch = document.toObject(Lunch.class);
+                            lunches.add(lunch);
+                        }
+                        lunchesLiveData.setValue(lunches);
+                    } else {
+                        lunchesLiveData.setValue(null);
+                    }
+                });
+
+        return lunchesLiveData;
+    }
+
+    private Date getToday() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 }
