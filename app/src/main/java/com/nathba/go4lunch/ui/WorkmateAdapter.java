@@ -10,13 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.nathba.go4lunch.R;
-import com.nathba.go4lunch.models.Lunch;
-import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.models.Workmate;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

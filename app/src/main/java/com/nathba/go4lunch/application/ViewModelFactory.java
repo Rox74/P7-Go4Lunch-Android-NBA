@@ -11,9 +11,6 @@ import com.nathba.go4lunch.repository.MapRepository;
 import com.nathba.go4lunch.repository.RestaurantRepository;
 import com.nathba.go4lunch.repository.WorkmateRepository;
 
-import java.security.Provider;
-import java.util.Map;
-
 /**
  * ViewModelFactory is responsible for creating instances of ViewModels in the application.
  * It holds references to the necessary repositories and uses them to instantiate the ViewModels.

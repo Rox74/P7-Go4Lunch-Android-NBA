@@ -1,21 +1,16 @@
 package com.nathba.go4lunch.application;
 
 import android.location.Location;
-import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.nathba.go4lunch.models.Lunch;
-import com.nathba.go4lunch.api.OverpassApi;
 import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.repository.LunchRepository;
 import com.nathba.go4lunch.repository.MapRepository;
-import com.nathba.go4lunch.repository.RepositoryCallback;
-import com.nathba.go4lunch.repository.RestaurantRepository;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MapViewModel extends ViewModel {

@@ -2,7 +2,6 @@ package com.nathba.go4lunch.models;
 
 import org.osmdroid.util.GeoPoint;
 
-import java.io.Serializable;
 import java.util.Objects;
 
 /**

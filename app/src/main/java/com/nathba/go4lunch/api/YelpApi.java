@@ -1,8 +1,5 @@
 package com.nathba.go4lunch.api;
 
-import static android.provider.Settings.System.getString;
-
-import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.models.YelpBusinessResponse;
 
 import okhttp3.OkHttpClient;
