@@ -42,15 +42,15 @@ public class RestaurantRepository {
         return restaurantsLiveData;
     }
 
-    // Appel API pour récupérer les restaurants (exécuté une seule fois)
-    public void fetchRestaurantsFromApi(RepositoryCallback<List<Restaurant>> callback) {
+    public void fetchRestaurantsFromApi(double latitude, double longitude, RepositoryCallback<List<Restaurant>> callback) {
         if (!cachedRestaurants.isEmpty()) {
             // Si les restaurants sont en cache, les retourner
             callback.onSuccess(cachedRestaurants);
             return;
         }
 
-        String overpassQuery = buildOverpassQuery(47.3123, 5.0914, 500);
+        // Utiliser les coordonnées de l'utilisateur pour construire la requête
+        String overpassQuery = buildOverpassQuery(latitude, longitude, 500);
         overpassApi.getRestaurants(overpassQuery).enqueue(new Callback<OverpassResponse>() {
             @Override
             public void onResponse(Call<OverpassResponse> call, Response<OverpassResponse> response) {

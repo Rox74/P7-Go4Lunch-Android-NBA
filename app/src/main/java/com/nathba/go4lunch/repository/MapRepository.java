@@ -15,11 +15,12 @@ public class MapRepository {
     private final MutableLiveData<List<Restaurant>> restaurants = new MutableLiveData<>();
 
     public MapRepository() {
-        loadRestaurants();
+        // Retirer l'appel à loadRestaurants ici, car il faut maintenant des coordonnées
     }
 
-    private void loadRestaurants() {
-        restaurantRepository.fetchRestaurantsFromApi(new RepositoryCallback<List<Restaurant>>() {
+    // Nouvelle méthode pour charger les restaurants en fonction de la localisation
+    public void loadRestaurants(double latitude, double longitude) {
+        restaurantRepository.fetchRestaurantsFromApi(latitude, longitude, new RepositoryCallback<List<Restaurant>>() {
             @Override
             public void onSuccess(List<Restaurant> data) {
                 restaurants.postValue(data);

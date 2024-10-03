@@ -48,4 +48,10 @@ public class MapViewModel extends ViewModel {
     public LiveData<List<Lunch>> getLunches() {
         return lunches;  // Exposer la liste des lunchs
     }
+
+    // Nouvelle méthode pour charger les restaurants en fonction de la localisation
+    public void loadRestaurants(double latitude, double longitude) {
+        mapRepository.loadRestaurants(latitude, longitude);
+    }
+
 }
