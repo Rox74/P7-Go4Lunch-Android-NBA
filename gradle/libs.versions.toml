@@ -3,6 +3,7 @@ agp = "8.5.1"
 compiler = "4.12.0"
 converterGson = "2.9.0"
 core = "1.13.1"
+coreTesting = "2.2.0"
 credentials = "1.2.2"
 drawerlayout = "1.2.0"
 firebaseAuth = "23.0.0"
@@ -16,6 +17,8 @@ espressoCore = "3.6.1"
 appcompat = "1.7.0"
 lifecycleCommon = "2.8.4"
 material = "1.12.0"
+mockitoAndroid = "5.3.1"
+mockitoCore = "5.3.1"
 navigationFragment = "2.7.7"
 navigationUi = "2.7.7"
 osmdroidAndroid = "6.1.10"
@@ -28,6 +31,7 @@ recyclerview = "1.3.2"
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "compiler" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 core = { module = "androidx.core:core", version.ref = "core" }
+core-testing = { module = "androidx.arch.core:core-testing", version.ref = "coreTesting" }
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawerlayout" }
@@ -43,6 +47,8 @@ espresso-core = { group = "androidx.test.espresso", name = "espresso-core", vers
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycleCommon" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+mockito-android = { module = "org.mockito:mockito-android", version.ref = "mockitoAndroid" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
 navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "navigationUi" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }

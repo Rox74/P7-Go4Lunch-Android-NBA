@@ -85,42 +85,39 @@ public class RestaurantRepository {
     }
 
     public void getRestaurantDetails(String restaurantId, GeoPoint location, String restaurantName, RepositoryCallback<Restaurant> callback) {
-        // Chercher dans le cache si le restaurant a déjà été récupéré
         for (Restaurant restaurant : cachedRestaurants) {
             if (restaurant.getRestaurantId().equals(restaurantId)) {
                 Log.d("RestaurantRepository", "Found restaurant in cache: " + restaurant.getName());
 
-                // Si le restaurant n'a pas encore les détails de Yelp, les récupérer
                 if (restaurant.getAddress() == null || restaurant.getPhotoUrl() == null) {
-                    fetchYelpDetails(restaurant, location, callback);  // Correction : Passer les coordonnées GPS
+                    fetchYelpDetails(restaurant, location, callback); // Utiliser les coordonnées GPS
                 } else {
-                    callback.onSuccess(restaurant);  // Retourner les détails du restaurant si déjà complet
+                    callback.onSuccess(restaurant);
                 }
                 return;
             }
         }
 
-        // Si le restaurant n'est pas dans le cache, le récupérer de Yelp en utilisant son nom et coordonnées GPS
+        // Si pas dans le cache, appel à Yelp avec le nom et les coordonnées GPS
         Log.e("RestaurantRepository", "Restaurant not found in cache: " + restaurantId);
-        fetchYelpDetails(new Restaurant(restaurantId, restaurantName, null, null, 0, location), location, callback);  // Correction : Passer les coordonnées GPS
+        fetchYelpDetails(new Restaurant(restaurantId, restaurantName, null, null, 0, location), location, callback);
     }
 
     private void fetchYelpDetails(Restaurant restaurant, GeoPoint location, RepositoryCallback<Restaurant> callback) {
-        // Utilisation des coordonnées GPS pour rechercher sur Yelp
-        String locationQuery = location.getLatitude() + "," + location.getLongitude();  // Créer une chaîne pour les coordonnées GPS
+        String locationQuery = location.getLatitude() + "," + location.getLongitude(); // Chaîne pour les coordonnées GPS
         yelpApi.getRestaurantDetails(restaurant.getName(), locationQuery).enqueue(new Callback<YelpBusinessResponse>() {
             @Override
             public void onResponse(Call<YelpBusinessResponse> call, Response<YelpBusinessResponse> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().businesses.isEmpty()) {
                     YelpBusinessResponse.YelpBusiness yelpData = response.body().businesses.get(0);
-                    restaurant.setAddress(yelpData.location.address);  // Récupérer l'adresse Yelp
-                    restaurant.setPhotoUrl(yelpData.imageUrl);  // Récupérer la photo Yelp
-                    restaurant.setRating(yelpData.rating);  // Récupérer la note Yelp
-                    restaurant.setPhoneNumber(yelpData.phone);  // Récupérer le numéro de téléphone Yelp
-                    restaurant.setYelpUrl(yelpData.url);  // Récupérer l'URL Yelp
+                    restaurant.setAddress(yelpData.location.address);
+                    restaurant.setPhotoUrl(yelpData.imageUrl);
+                    restaurant.setRating(yelpData.rating);
+                    restaurant.setPhoneNumber(yelpData.phone);
+                    restaurant.setYelpUrl(yelpData.url);
 
-                    cachedRestaurants.add(restaurant);  // Ajouter le restaurant au cache
-                    callback.onSuccess(restaurant);  // Retourner les détails du restaurant via le callback
+                    cachedRestaurants.add(restaurant); // Ajouter au cache
+                    callback.onSuccess(restaurant);  // Retourner les détails via le callback
                 } else {
                     Log.e("YelpApi", "Failed to load Yelp details. Response code: " + response.code());
                     callback.onError(new Exception("Failed to load Yelp details"));

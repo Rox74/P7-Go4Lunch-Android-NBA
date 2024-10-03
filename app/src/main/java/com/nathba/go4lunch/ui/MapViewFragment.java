@@ -25,6 +25,8 @@ import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
+import com.nathba.go4lunch.repository.RepositoryCallback;
+import com.nathba.go4lunch.repository.RestaurantRepository;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -208,7 +210,7 @@ public class MapViewFragment extends Fragment implements LocationListener {
         for (Restaurant restaurant : restaurants) {
             if (restaurant.getRestaurantId() == null) {
                 Log.e("MapViewFragment", "Restaurant ID is null for restaurant: " + restaurant.getName());
-                continue;  // Ignorer les restaurants sans ID valide
+                continue;
             }
 
             Marker restaurantMarker = new Marker(mapView);
@@ -216,25 +218,35 @@ public class MapViewFragment extends Fragment implements LocationListener {
             restaurantMarker.setTitle(restaurant.getName());
 
             restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
-                Log.d("MapViewFragment", "Restaurant selected: " + restaurant.getName() + " (ID: " + restaurant.getRestaurantId() + ")");
+                Log.d("MapViewFragment", "Restaurant selected: " + restaurant.getName());
 
-                // Transmettre l'ID du restaurant au fragment de détail
-                RestaurantDetailFragment detailFragment = new RestaurantDetailFragment();
-                Bundle bundle = new Bundle();
-                bundle.putString("restaurant_id", restaurant.getRestaurantId());
-                detailFragment.setArguments(bundle);
+                // Récupérer les coordonnées GPS et le nom du restaurant
+                GeoPoint location = restaurant.getLocation();
+                String restaurantName = restaurant.getName();
 
-                // Remplacer le fragment actuel par le fragment de détail
-                requireActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, detailFragment)
-                        .addToBackStack(null)
-                        .commit();
+                // Appel à Yelp pour obtenir plus de détails
+                fetchYelpDetails(restaurant.getRestaurantId(), location, restaurantName);
 
                 return true;
             });
 
             mapView.getOverlays().add(restaurantMarker);
         }
+    }
+
+    private void fetchYelpDetails(String restaurantId, GeoPoint location, String restaurantName) {
+        RestaurantRepository restaurantRepository = new RestaurantRepository();
+        restaurantRepository.getRestaurantDetails(restaurantId, location, restaurantName, new RepositoryCallback<Restaurant>() {
+            @Override
+            public void onSuccess(Restaurant restaurant) {
+                Log.d("MapViewFragment", "Yelp details retrieved successfully for: " + restaurant.getName() + " ," + restaurant.getAddress() + " ," + restaurant.getPhoneNumber() + " ," + restaurant.getRating() + " ," + restaurant.getPhotoUrl());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Log.e("MapViewFragment", "Failed to retrieve Yelp details: " + t.getMessage());
+            }
+        });
     }
 
     /**

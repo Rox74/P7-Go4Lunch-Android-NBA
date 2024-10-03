@@ -14,8 +14,14 @@ import com.nathba.go4lunch.repository.WorkmateRepository;
 import java.security.Provider;
 import java.util.Map;
 
+/**
+ * ViewModelFactory is responsible for creating instances of ViewModels in the application.
+ * It holds references to the necessary repositories and uses them to instantiate the ViewModels.
+ * This factory is used to ensure the correct dependencies are passed to each ViewModel.
+ */
 public class ViewModelFactory implements ViewModelProvider.Factory {
 
+    // Repositories required by various ViewModels
     private final MainRepository mainRepository;
     private final AuthRepository authRepository;
     private final LunchRepository lunchRepository;
@@ -23,7 +29,16 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
     private final WorkmateRepository workmateRepository;
     private final MapRepository mapRepository;
 
-    // Constructor that accepts all necessary repositories
+    /**
+     * Constructor that accepts all necessary repositories for ViewModel creation.
+     *
+     * @param mainRepository        Repository for main app data.
+     * @param authRepository        Repository for authentication.
+     * @param lunchRepository       Repository for managing lunch data.
+     * @param restaurantRepository  Repository for restaurant data.
+     * @param workmateRepository    Repository for workmate data.
+     * @param mapRepository         Repository for map and location data.
+     */
     public ViewModelFactory(MainRepository mainRepository,
                             AuthRepository authRepository,
                             LunchRepository lunchRepository,
@@ -38,9 +53,19 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         this.mapRepository = mapRepository;
     }
 
+    /**
+     * Creates and returns an instance of the requested ViewModel.
+     * It checks the class of the requested ViewModel and initializes it with the appropriate repository.
+     *
+     * @param modelClass The class of the ViewModel to be created.
+     * @param <T>        The type of ViewModel to be created.
+     * @return An instance of the requested ViewModel.
+     * @throws IllegalArgumentException if the ViewModel class is not recognized.
+     */
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+        // Return the corresponding ViewModel based on the provided class type
         if (modelClass.isAssignableFrom(MainViewModel.class)) {
             return (T) new MainViewModel(mainRepository);
         } else if (modelClass.isAssignableFrom(AuthViewModel.class)) {
@@ -54,6 +79,8 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         } else if (modelClass.isAssignableFrom(MapViewModel.class)) {
             return (T) new MapViewModel(mapRepository, lunchRepository);
         }
+
+        // Throw an exception if the ViewModel class is not recognized
         throw new IllegalArgumentException("Unknown ViewModel class");
     }
 }
