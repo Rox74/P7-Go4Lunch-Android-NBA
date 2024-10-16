@@ -79,16 +79,17 @@
 
             <!-- Bouton d'appel -->
             <Button
-                android:id="@+id/call_button"
+                android:id="@+id/restaurant_phone_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableStart="@drawable/ic_call"
-                android:text="Call"
+                android:text="Phone not available"
                 android:drawablePadding="8dp"
                 android:padding="10dp"
                 android:textColor="?attr/colorOnPrimary"
-                android:backgroundTint="?attr/colorPrimary"/>
+                android:backgroundTint="?attr/colorPrimary"
+                android:enabled="false"/>
 
             <!-- Bouton Like -->
             <Button
@@ -105,16 +106,17 @@
 
             <!-- Bouton pour le site web -->
             <Button
-                android:id="@+id/website_button"
+                android:id="@+id/restaurant_website_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableStart="@drawable/ic_website"
-                android:text="Website"
+                android:text="Website not available"
                 android:drawablePadding="8dp"
                 android:padding="10dp"
                 android:textColor="?attr/colorOnPrimary"
-                android:backgroundTint="?attr/colorPrimary"/>
+                android:backgroundTint="?attr/colorPrimary"
+                android:enabled="false"/>
         </LinearLayout>
 
         <!-- Horaires d'ouverture -->
@@ -122,7 +124,7 @@
             android:id="@+id/restaurant_hours"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Opening hours: 9:00 AM - 10:00 PM"
+            android:text="Opening hours  : "
             android:textSize="14sp"
             android:layout_marginTop="16dp"
             android:textColor="?attr/colorOnBackground"/>

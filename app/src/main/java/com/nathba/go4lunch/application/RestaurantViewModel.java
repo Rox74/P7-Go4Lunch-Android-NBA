@@ -16,7 +16,6 @@ public class RestaurantViewModel extends ViewModel {
 
     public RestaurantViewModel(RestaurantRepository restaurantRepository) {
         this.restaurantRepository = restaurantRepository;
-        this.restaurants = restaurantRepository.getRestaurants();
     }
 
     public LiveData<List<Lunch>> getLunchesForRestaurantToday(String restaurantId) {
@@ -25,6 +24,11 @@ public class RestaurantViewModel extends ViewModel {
 
     public LiveData<List<Restaurant>> getRestaurants() {
         return restaurants;
+    }
+
+    // Méthode mise à jour pour récupérer les restaurants en fonction des coordonnées
+    public LiveData<List<Restaurant>> getRestaurants(double latitude, double longitude) {
+        return restaurantRepository.getRestaurants(latitude, longitude);
     }
 
     public void addLunch(Lunch lunch, Restaurant restaurant) {

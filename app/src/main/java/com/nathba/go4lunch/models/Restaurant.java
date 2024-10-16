@@ -2,6 +2,8 @@ package com.nathba.go4lunch.models;
 
 import org.osmdroid.util.GeoPoint;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -31,29 +33,28 @@ public class Restaurant {
 
     private String yelpUrl;
 
+    private List<Lunch> lunches;
+
+    private String openingHours;  // Horaires d'ouverture
+
     /**
      * Default constructor for Restaurant.
      * Initializes a new instance with default values.
      */
     public Restaurant() {}
 
-    /**
-     * Constructs a new Restaurant with the specified details.
-     *
-     * @param restaurantId Unique identifier for the restaurant
-     * @param name Name of the restaurant
-     * @param address Address of the restaurant
-     * @param photoUrl URL of the restaurant's photo
-     * @param rating Rating of the restaurant
-     * @param location Geographical location of the restaurant
-     */
-    public Restaurant(String restaurantId, String name, String address, String photoUrl, double rating, GeoPoint location) {
+    // Constructor avec horaires d'ouverture
+    public Restaurant(String restaurantId, String name, String address, String photoUrl, double rating, GeoPoint location, String phoneNumber, String yelpUrl, String openingHours, List<Lunch> lunches) {
         this.restaurantId = restaurantId;
         this.name = name;
         this.address = address;
         this.photoUrl = photoUrl;
         this.rating = rating;
         this.location = location;
+        this.phoneNumber = phoneNumber;
+        this.yelpUrl = yelpUrl;
+        this.openingHours = openingHours;
+        this.lunches = lunches != null ? lunches : new ArrayList<>();
     }
 
     /**
@@ -178,6 +179,22 @@ public class Restaurant {
 
     public void setYelpUrl(String yelpUrl) {
         this.yelpUrl = yelpUrl;
+    }
+
+    public List<Lunch> getLunches() {
+        return lunches;
+    }
+
+    public void setLunches(List<Lunch> lunches) {
+        this.lunches = lunches;
+    }
+
+    public String getOpeningHours() {
+        return openingHours;
+    }
+
+    public void setOpeningHours(String openingHours) {
+        this.openingHours = openingHours;
     }
 
     /**

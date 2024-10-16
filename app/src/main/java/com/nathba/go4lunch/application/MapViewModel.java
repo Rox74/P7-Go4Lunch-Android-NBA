@@ -16,6 +16,7 @@ import com.nathba.go4lunch.repository.RestaurantRepository;
 
 import org.osmdroid.util.GeoPoint;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MapViewModel extends ViewModel {
@@ -51,8 +52,9 @@ public class MapViewModel extends ViewModel {
             @Override
             public void onError(Throwable t) {
                 Log.e(TAG, "Failed to retrieve restaurant details: " + t.getMessage());
-                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, null, null, 0, location);
-                selectedRestaurant.setValue(basicRestaurant); // Handle error and use basic details
+                // Créer une instance de Restaurant avec des valeurs par défaut
+                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", new ArrayList<>());
+                selectedRestaurant.setValue(basicRestaurant); // Utiliser des détails de base en cas d'erreur
             }
         });
     }
@@ -65,6 +67,10 @@ public class MapViewModel extends ViewModel {
     // Expose the list of restaurants to observers
     public LiveData<List<Restaurant>> getRestaurants() {
         return restaurants;
+    }
+
+    public LiveData<List<Restaurant>> getRestaurants(double latitude, double longitude) {
+        return restaurantRepository.getRestaurants(latitude, longitude);
     }
 
     // Expose the user's location to observers

@@ -1,5 +1,7 @@
 package com.nathba.go4lunch.ui;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -30,6 +32,7 @@ import com.nathba.go4lunch.models.Workmate;
 
 import org.osmdroid.util.GeoPoint;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -44,8 +47,12 @@ public class RestaurantDetailFragment extends Fragment {
     private String restaurantName;
     private String restaurantAddress;
     private String restaurantPhotoUrl;
+    private String restaurantPhoneNumber;
+    private String restaurantWebsite;
+    private String restaurantOpeningHours;
     private Double restaurantRating;
     private GeoPoint restaurantLocation;
+
 
     private LinearLayout joiningWorkmatesList;
 
@@ -60,6 +67,10 @@ public class RestaurantDetailFragment extends Fragment {
             restaurantAddress = getArguments().getString("restaurantAddress");
             restaurantPhotoUrl = getArguments().getString("restaurantPhotoUrl");
             restaurantRating = getArguments().getDouble("restaurantRating");
+            restaurantPhoneNumber = getArguments().getString("restaurantPhoneNumber");
+            restaurantWebsite = getArguments().getString("restaurantWebsite");
+            restaurantOpeningHours = getArguments().getString("restaurantOpeningHours");
+
             double latitude = getArguments().getDouble("latitude");
             double longitude = getArguments().getDouble("longitude");
             restaurantLocation = new GeoPoint(latitude, longitude);
@@ -90,30 +101,70 @@ public class RestaurantDetailFragment extends Fragment {
         ImageView restaurantImageView = view.findViewById(R.id.restaurant_image);
         RatingBar restaurantRatingBar = view.findViewById(R.id.restaurant_rating);
 
+        // Boutons pour le téléphone et le site web
+        Button restaurantPhoneButton = view.findViewById(R.id.restaurant_phone_button);
+        Button restaurantWebsiteButton = view.findViewById(R.id.restaurant_website_button);
+
+        // TextView pour les horaires d'ouverture
+        TextView restaurantHoursView = view.findViewById(R.id.restaurant_hours);
+
         restaurantNameView.setText(restaurantName);
 
-        // Si l'adresse est disponible, l'afficher, sinon montrer un message
+        // Mise à jour de l'adresse
         if (restaurantAddress != null && !restaurantAddress.isEmpty()) {
             restaurantAddressView.setText(restaurantAddress);
         } else {
             restaurantAddressView.setText("Address not available");
         }
 
-        // Si l'image est disponible, la charger avec Glide
+        // Mise à jour de l'image
         if (restaurantPhotoUrl != null && !restaurantPhotoUrl.isEmpty()) {
-            Glide.with(view)
-                    .load(restaurantPhotoUrl)
-                    .into(restaurantImageView);
+            Glide.with(view).load(restaurantPhotoUrl).into(restaurantImageView);
         } else {
-            restaurantImageView.setImageResource(R.drawable.restaurant_image);  // Image par défaut si indisponible
+            restaurantImageView.setImageResource(R.drawable.restaurant_image);  // Image par défaut
         }
 
-        // Mettre à jour la note, ou masquer si elle n'est pas disponible
+        // Mise à jour de la note
         if (restaurantRating > 0) {
             restaurantRatingBar.setRating(restaurantRating.floatValue());
         } else {
             restaurantRatingBar.setVisibility(View.GONE);
             Toast.makeText(getContext(), "Rating not available", Toast.LENGTH_SHORT).show();
+        }
+
+        // Mise à jour du bouton téléphone
+        if (restaurantPhoneNumber != null && !restaurantPhoneNumber.isEmpty()) {
+            restaurantPhoneButton.setText(restaurantPhoneNumber);
+            restaurantPhoneButton.setEnabled(true);
+            restaurantPhoneButton.setOnClickListener(v -> {
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:" + restaurantPhoneNumber));
+                startActivity(intent);
+            });
+        } else {
+            restaurantPhoneButton.setText("Phone not available");
+            restaurantPhoneButton.setEnabled(false);
+        }
+
+        // Mise à jour du bouton site web
+        if (restaurantWebsite != null && !restaurantWebsite.isEmpty()) {
+            restaurantWebsiteButton.setText("Visit Website");
+            restaurantWebsiteButton.setEnabled(true);
+            restaurantWebsiteButton.setOnClickListener(v -> {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(restaurantWebsite));
+                startActivity(intent);
+            });
+        } else {
+            restaurantWebsiteButton.setText("Website not available");
+            restaurantWebsiteButton.setEnabled(false);
+        }
+
+        // Mise à jour des horaires d'ouverture
+        if (restaurantOpeningHours != null && !restaurantOpeningHours.isEmpty()) {
+            restaurantHoursView.setText(restaurantOpeningHours);
+        } else {
+            restaurantHoursView.setText("Opening hours not available"); // Message d'indisponibilité
         }
     }
 
@@ -128,13 +179,18 @@ public class RestaurantDetailFragment extends Fragment {
             Lunch lunch = new Lunch(lunchId, workmateId, restaurantId, currentDate);
 
             // Créer un objet Restaurant avec les informations actuelles
+            // Mise à jour pour inclure le numéro de téléphone, le site web et les horaires
             Restaurant restaurant = new Restaurant(
                     restaurantId,
                     restaurantName,
                     restaurantAddress,
                     restaurantPhotoUrl,
-                    restaurantRating,
-                    restaurantLocation
+                    restaurantRating != null ? restaurantRating : 0.0,  // Défaut à 0.0 si null
+                    restaurantLocation,
+                    restaurantPhoneNumber != null ? restaurantPhoneNumber : "",  // Défaut à "" si null
+                    restaurantWebsite != null ? restaurantWebsite : "",  // Défaut à "" si null
+                    restaurantOpeningHours != null ? restaurantOpeningHours : "",  // Défaut à "" si null
+                    new ArrayList<>()  // Liste de lunchs vide pour l'instant
             );
 
             // Ajouter le lunch et le restaurant dans Firebase via le ViewModel
