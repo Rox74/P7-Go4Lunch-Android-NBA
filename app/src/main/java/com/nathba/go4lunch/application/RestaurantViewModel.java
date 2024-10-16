@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
+import com.nathba.go4lunch.repository.LunchRepository;
 import com.nathba.go4lunch.repository.RestaurantRepository;
 
 import java.util.List;
@@ -12,14 +13,17 @@ import java.util.List;
 public class RestaurantViewModel extends ViewModel {
 
     private final RestaurantRepository restaurantRepository;
+    private final LunchRepository lunchRepository;
     private LiveData<List<Restaurant>> restaurants;
 
-    public RestaurantViewModel(RestaurantRepository restaurantRepository) {
+    public RestaurantViewModel(RestaurantRepository restaurantRepository, LunchRepository lunchRepository) {
         this.restaurantRepository = restaurantRepository;
+        this.lunchRepository = lunchRepository;
     }
 
+    // Utiliser LunchRepository pour récupérer les lunchs d'un restaurant
     public LiveData<List<Lunch>> getLunchesForRestaurantToday(String restaurantId) {
-        return restaurantRepository.getLunchesForRestaurantToday(restaurantId);
+        return lunchRepository.getLunchesForRestaurantToday(restaurantId);
     }
 
     public LiveData<List<Restaurant>> getRestaurants() {
@@ -31,7 +35,12 @@ public class RestaurantViewModel extends ViewModel {
         return restaurantRepository.getRestaurants(latitude, longitude);
     }
 
-    public void addLunch(Lunch lunch, Restaurant restaurant) {
-        restaurantRepository.addLunch(lunch, restaurant);
+    // Utiliser LunchRepository pour ajouter un lunch
+    public void addLunch(Lunch lunch) {
+        lunchRepository.addLunch(lunch);
+    }
+
+    public void addRestaurant(Restaurant restaurant) {
+        restaurantRepository.addRestaurantToFirestore(restaurant);
     }
 }

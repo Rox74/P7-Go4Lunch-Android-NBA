@@ -20,15 +20,12 @@ public class MapRepository {
 
     // Nouvelle méthode pour charger les restaurants en fonction de la localisation
     public void loadRestaurants(double latitude, double longitude) {
-        restaurantRepository.fetchRestaurantsFromApi(latitude, longitude, new RepositoryCallback<List<Restaurant>>() {
-            @Override
-            public void onSuccess(List<Restaurant> data) {
+        // Utiliser directement getRestaurants avec LiveData
+        restaurantRepository.getRestaurants(latitude, longitude).observeForever(data -> {
+            if (data != null) {
                 restaurants.postValue(data);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                Log.e("MapRepository", "Error fetching restaurants", t);
+            } else {
+                Log.e("MapRepository", "Error fetching restaurants");
             }
         });
     }

@@ -169,7 +169,6 @@ public class RestaurantDetailFragment extends Fragment {
     }
 
     private void addLunchToFirebase() {
-        // Création d'un objet Lunch avec les informations du restaurant et de l'utilisateur actuel
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             String lunchId = UUID.randomUUID().toString();  // Générer un ID unique pour le lunch
@@ -178,26 +177,25 @@ public class RestaurantDetailFragment extends Fragment {
 
             Lunch lunch = new Lunch(lunchId, workmateId, restaurantId, currentDate);
 
-            // Créer un objet Restaurant avec les informations actuelles
-            // Mise à jour pour inclure le numéro de téléphone, le site web et les horaires
+            // Ajouter le lunch dans Firebase via LunchRepository
+            restaurantViewModel.addLunch(lunch);
+
+            // Ajouter le restaurant dans Firebase via RestaurantRepository
             Restaurant restaurant = new Restaurant(
                     restaurantId,
                     restaurantName,
                     restaurantAddress,
                     restaurantPhotoUrl,
-                    restaurantRating != null ? restaurantRating : 0.0,  // Défaut à 0.0 si null
+                    restaurantRating != null ? restaurantRating : 0.0,
                     restaurantLocation,
-                    restaurantPhoneNumber != null ? restaurantPhoneNumber : "",  // Défaut à "" si null
-                    restaurantWebsite != null ? restaurantWebsite : "",  // Défaut à "" si null
-                    restaurantOpeningHours != null ? restaurantOpeningHours : "",  // Défaut à "" si null
-                    new ArrayList<>()  // Liste de lunchs vide pour l'instant
+                    restaurantPhoneNumber != null ? restaurantPhoneNumber : "",
+                    restaurantWebsite != null ? restaurantWebsite : "",
+                    restaurantOpeningHours != null ? restaurantOpeningHours : "",
+                    new ArrayList<>()
             );
+            restaurantViewModel.addRestaurant(restaurant);
 
-            // Ajouter le lunch et le restaurant dans Firebase via le ViewModel
-            restaurantViewModel.addLunch(lunch, restaurant);
-
-            // Afficher un message à l'utilisateur pour indiquer que l'ajout a été effectué
-            Toast.makeText(getContext(), "Lunch ajouté avec succès", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Lunch et restaurant ajoutés avec succès", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(getContext(), "Utilisateur non connecté", Toast.LENGTH_SHORT).show();
         }

@@ -59,6 +59,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
      * @return An instance of the requested ViewModel.
      * @throws IllegalArgumentException if the ViewModel class is not recognized.
      */
+    @SuppressWarnings("unchecked")
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
@@ -70,7 +71,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         } else if (modelClass.isAssignableFrom(LunchViewModel.class)) {
             return (T) new LunchViewModel(lunchRepository);
         } else if (modelClass.isAssignableFrom(RestaurantViewModel.class)) {
-            return (T) new RestaurantViewModel(restaurantRepository);
+            return (T) new RestaurantViewModel(restaurantRepository, lunchRepository);
         } else if (modelClass.isAssignableFrom(WorkmateViewModel.class)) {
             return (T) new WorkmateViewModel(workmateRepository);
         } else if (modelClass.isAssignableFrom(MapViewModel.class)) {
