@@ -88,11 +88,23 @@ public class MapViewFragment extends Fragment implements LocationListener {
         // Initialize MapViewModel using ViewModelFactory
         mapViewModel = new ViewModelProvider(this, viewModelFactory).get(MapViewModel.class);
 
+        // Observe changes in the selected restaurant
+        mapViewModel.getSelectedRestaurant().observe(getViewLifecycleOwner(), restaurant -> {
+            if (restaurant != null) {
+                openRestaurantDetailFragment(restaurant);
+            }
+        });
+
         // Setup the map view
         initializeMap();
 
+        mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
+            List<Lunch> lunches = mapViewModel.getLunches().getValue();
+            displayRestaurants(restaurants, lunches);  // Passer les lunchs pour vérifier si un restaurant est associé
+        });
+
         // Observe changes in the ViewModel
-        observeViewModel();
+        // observeViewModel();
 
         // Request location updates from the system
         requestLocationUpdates();
@@ -245,26 +257,9 @@ public class MapViewFragment extends Fragment implements LocationListener {
         mapView.invalidate();  // Actualiser la carte
     }
 
+    // Appel à la méthode dans le ViewModel
     private void fetchYelpDetails(String restaurantId, GeoPoint location, String restaurantName) {
-        RestaurantRepository restaurantRepository = new RestaurantRepository();
-
-        // Appel à Yelp pour obtenir les détails
-        restaurantRepository.getRestaurantDetails(restaurantId, location, restaurantName, new RepositoryCallback<Restaurant>() {
-            @Override
-            public void onSuccess(Restaurant restaurant) {
-                // Si on récupère des détails depuis Yelp, on ouvre la page de détails avec ces infos
-                openRestaurantDetailFragment(restaurant);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // Si on ne peut pas obtenir les détails via Yelp, utiliser les infos basiques
-                Log.e("MapViewFragment", "Failed to retrieve Yelp details, using basic info");
-                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, null, null, 0, location);
-                openRestaurantDetailFragment(basicRestaurant);
-                Toast.makeText(requireContext(), "Yelp details not available, using basic info", Toast.LENGTH_SHORT).show();
-            }
-        });
+        mapViewModel.fetchRestaurantDetails(restaurantId, location, restaurantName);
     }
 
     // Méthode pour ouvrir la page de détails du restaurant
@@ -319,18 +314,6 @@ public class MapViewFragment extends Fragment implements LocationListener {
     public void onResume() {
         super.onResume();
         mapView.onResume();
-
-        // Restaurer les restaurants et leurs marqueurs sur la carte
-        if (!restaurantList.isEmpty()) {
-            displayRestaurants(restaurantList, mapViewModel.getLunches().getValue());
-        } else {
-            // Si la liste est vide, la recharger (optionnel)
-            // Observer les données des restaurants
-            mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
-                List<Lunch> lunches = mapViewModel.getLunches().getValue();
-                displayRestaurants(restaurants, lunches);  // Passer les lunchs pour vérifier si un restaurant est associé
-            });
-        }
     }
 
     @Override

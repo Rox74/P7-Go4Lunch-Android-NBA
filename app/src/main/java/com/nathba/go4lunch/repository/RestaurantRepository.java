@@ -26,12 +26,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 public class RestaurantRepository {
 
     private final OverpassApi overpassApi;
     private final YelpApi yelpApi;
     private List<Restaurant> cachedRestaurants = new ArrayList<>(); // Cache des restaurants
     private final FirebaseFirestore firestore;
+    private static final String TAG = "RestaurantRepository";
 
     public RestaurantRepository() {
         overpassApi = new OverpassApi();
@@ -42,32 +46,39 @@ public class RestaurantRepository {
     public LiveData<List<Restaurant>> getRestaurants() {
         MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>();
         restaurantsLiveData.setValue(cachedRestaurants); // Retourner les restaurants en cache
+        Log.d(TAG, "Returning cached restaurants: " + cachedRestaurants.size());
         return restaurantsLiveData;
     }
 
     public void fetchRestaurantsFromApi(double latitude, double longitude, RepositoryCallback<List<Restaurant>> callback) {
         if (!cachedRestaurants.isEmpty()) {
             // Si les restaurants sont en cache, les retourner
+            Log.d(TAG, "Returning cached restaurants: " + cachedRestaurants.size());
             callback.onSuccess(cachedRestaurants);
             return;
         }
 
         // Utiliser les coordonnées de l'utilisateur pour construire la requête
         String overpassQuery = buildOverpassQuery(latitude, longitude, 500);
+        Log.d(TAG, "Fetching restaurants from Overpass API with query: " + overpassQuery);
+
         overpassApi.getRestaurants(overpassQuery).enqueue(new Callback<OverpassResponse>() {
             @Override
             public void onResponse(Call<OverpassResponse> call, Response<OverpassResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Restaurant> restaurants = convertToRestaurants(response.body().elements);
                     cachedRestaurants = restaurants;  // Stocker les restaurants en cache
+                    Log.d(TAG, "Successfully fetched restaurants: " + cachedRestaurants.size());
                     callback.onSuccess(cachedRestaurants);
                 } else {
+                    Log.e(TAG, "API Error: " + response.code());
                     callback.onError(new Exception("API Error"));
                 }
             }
 
             @Override
             public void onFailure(Call<OverpassResponse> call, Throwable t) {
+                Log.e(TAG, "Failed to fetch restaurants: " + t.getMessage(), t);
                 callback.onError(t);
             }
         });
@@ -84,31 +95,39 @@ public class RestaurantRepository {
             restaurant.setLocation(new GeoPoint(element.lat, element.lon));  // Utiliser les coordonnées GPS
             restaurants.add(restaurant);
         }
+        Log.d(TAG, "Converted Overpass elements to restaurant objects: " + restaurants.size());
         return restaurants;
     }
 
     public void getRestaurantDetails(String restaurantId, GeoPoint location, String restaurantName, RepositoryCallback<Restaurant> callback) {
+        // D'abord, vérifier le cache
         for (Restaurant restaurant : cachedRestaurants) {
             if (restaurant.getRestaurantId().equals(restaurantId)) {
-                Log.d("RestaurantRepository", "Found restaurant in cache: " + restaurant.getName());
+                Log.d(TAG, "Found restaurant in cache: " + restaurant.getName());
 
+                // Si l'adresse et la photo sont manquantes, récupérer plus de détails
                 if (restaurant.getAddress() == null || restaurant.getPhotoUrl() == null) {
-                    fetchYelpDetails(restaurant, location, callback); // Utiliser les coordonnées GPS
+                    fetchYelpDetails(restaurant, location, callback);
                 } else {
-                    callback.onSuccess(restaurant);
+                    callback.onSuccess(restaurant);  // Renvoie immédiatement le restaurant depuis le cache
                 }
                 return;
             }
         }
 
-        // Si pas dans le cache, appel à Yelp avec le nom et les coordonnées GPS
-        Log.e("RestaurantRepository", "Restaurant not found in cache: " + restaurantId);
+        // Si pas trouvé dans le cache, appel à Yelp avec le nom et les coordonnées GPS
+        Log.d(TAG, "Restaurant not found in cache, fetching details from Yelp API");
         fetchYelpDetails(new Restaurant(restaurantId, restaurantName, null, null, 0, location), location, callback);
     }
 
     private void fetchYelpDetails(Restaurant restaurant, GeoPoint location, RepositoryCallback<Restaurant> callback) {
+        // Retirer l'encodage du nom du restaurant
+        String restaurantName = restaurant.getName(); // Utiliser directement le nom sans encodage
         String locationQuery = location.getLatitude() + "," + location.getLongitude(); // Chaîne pour les coordonnées GPS
-        yelpApi.getRestaurantDetails(restaurant.getName(), locationQuery).enqueue(new Callback<YelpBusinessResponse>() {
+
+        Log.d(TAG, "Fetching Yelp details for restaurant: " + restaurantName + " at location: " + locationQuery);
+
+        yelpApi.getRestaurantDetails(restaurantName, locationQuery).enqueue(new Callback<YelpBusinessResponse>() {
             @Override
             public void onResponse(Call<YelpBusinessResponse> call, Response<YelpBusinessResponse> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().businesses.isEmpty()) {
@@ -136,6 +155,7 @@ public class RestaurantRepository {
     }
 
     public void addLunch(Lunch lunch, Restaurant restaurant) {
+        Log.d(TAG, "Adding lunch for restaurant: " + restaurant.getName());
         // Sauvegarder le lunch dans Firestore
         FirebaseFirestore.getInstance().collection("lunches")
                 .document(lunch.getLunchId())
@@ -145,19 +165,20 @@ public class RestaurantRepository {
                     addRestaurantToFirestore(restaurant);
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("RestaurantRepository", "Erreur lors de l'ajout du lunch", e);
+                    Log.e(TAG, "Error adding lunch: ", e);
                 });
     }
 
     private void addRestaurantToFirestore(Restaurant restaurant) {
+        Log.d(TAG, "Adding restaurant to Firestore: " + restaurant.getName());
         FirebaseFirestore.getInstance().collection("restaurants")
                 .document(restaurant.getRestaurantId())
                 .set(restaurant)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d("RestaurantRepository", "Restaurant ajouté avec succès");
+                    Log.d(TAG, "Restaurant added successfully: " + restaurant.getName());
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("RestaurantRepository", "Erreur lors de l'ajout du restaurant", e);
+                    Log.e(TAG, "Error adding restaurant: ", e);
                 });
     }
 
@@ -183,7 +204,9 @@ public class RestaurantRepository {
                             lunches.add(lunch);
                         }
                         lunchesLiveData.setValue(lunches);
+                        Log.d(TAG, "Found lunches for restaurant: " + restaurantId + " - " + lunches.size() + " found.");
                     } else {
+                        Log.e(TAG, "Error getting lunches: ", task.getException());
                         lunchesLiveData.setValue(null);
                     }
                 });

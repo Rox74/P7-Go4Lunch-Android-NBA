@@ -74,7 +74,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         } else if (modelClass.isAssignableFrom(WorkmateViewModel.class)) {
             return (T) new WorkmateViewModel(workmateRepository);
         } else if (modelClass.isAssignableFrom(MapViewModel.class)) {
-            return (T) new MapViewModel(mapRepository, lunchRepository);
+            return (T) new MapViewModel(mapRepository, lunchRepository, restaurantRepository);
         }
 
         // Throw an exception if the ViewModel class is not recognized
