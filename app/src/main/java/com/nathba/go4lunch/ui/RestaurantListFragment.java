@@ -17,14 +17,9 @@ import com.nathba.go4lunch.application.RestaurantViewModel;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
 
-/**
- * A Fragment that displays a list of restaurants using a RecyclerView.
- * The list is provided by the RestaurantViewModel and displayed with the RestaurantAdapter.
- */
 public class RestaurantListFragment extends Fragment {
 
     private RestaurantViewModel restaurantViewModel;
-    private ViewModelFactory viewModelFactory;
     private RecyclerView recyclerView;
     private RestaurantAdapter adapter;
 
@@ -32,27 +27,32 @@ public class RestaurantListFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_restaurant_list, container, false);
+        recyclerView = view.findViewById(R.id.recyclerView);
 
-        // Obtain ViewModelFactory from AppInjector
-        viewModelFactory = AppInjector.getInstance().getViewModelFactory();
-
-        // Initialize RestaurantViewModel using ViewModelProvider with ViewModelFactory
+        // Obtenir le ViewModel
+        ViewModelFactory viewModelFactory = AppInjector.getInstance().getViewModelFactory();
         restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
 
-        // Initialize the RecyclerView
-        recyclerView = view.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new RestaurantAdapter();
+        // Configurer l'adapter avec le ViewModel
+        adapter = new RestaurantAdapter(restaurantViewModel);
         recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Observe the restaurant data from the ViewModel
-        restaurantViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
-            // Update the adapter with the new list of restaurants
-            adapter.submitList(restaurants);
-        });
+        // Observer les changements dans les restaurants
+        observeRestaurants();
 
         return view;
+    }
+
+    private void observeRestaurants() {
+        double latitude = 47.3123;  // Exemple de latitude
+        double longitude = 5.0914;  // Exemple de longitude
+
+        restaurantViewModel.getRestaurants(latitude, longitude).observe(getViewLifecycleOwner(), restaurants -> {
+            if (restaurants != null && !restaurants.isEmpty()) {
+                adapter.submitList(restaurants);
+            }
+        });
     }
 }

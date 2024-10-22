@@ -26,10 +26,6 @@ public class RestaurantViewModel extends ViewModel {
         return lunchRepository.getLunchesForRestaurantToday(restaurantId);
     }
 
-    public LiveData<List<Restaurant>> getRestaurants() {
-        return restaurants;
-    }
-
     // Méthode mise à jour pour récupérer les restaurants en fonction des coordonnées
     public LiveData<List<Restaurant>> getRestaurants(double latitude, double longitude) {
         return restaurantRepository.getRestaurants(latitude, longitude);
@@ -42,5 +38,10 @@ public class RestaurantViewModel extends ViewModel {
 
     public void addRestaurant(Restaurant restaurant) {
         restaurantRepository.addRestaurantToFirestore(restaurant);
+    }
+
+    // Récupérer le nombre de lunchs pour un restaurant spécifique
+    public LiveData<Integer> getLunchCountForRestaurant(String restaurantId) {
+        return lunchRepository.getLunchCountForRestaurant(restaurantId);
     }
 }
