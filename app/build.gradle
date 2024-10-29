@@ -41,6 +41,8 @@ dependencies {
     implementation libs.navigation.ui
     implementation libs.lifecycle.common
     implementation libs.recyclerview
+    implementation libs.uiautomator
+    implementation libs.espresso.contrib
 
     testImplementation libs.junit
     testImplementation libs.mockito.core

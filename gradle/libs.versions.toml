@@ -1,31 +1,34 @@
 [versions]
-agp = "8.5.1"
+agp = "8.5.2"
 compiler = "4.12.0"
 converterGson = "2.9.0"
 core = "1.13.1"
 coreTesting = "2.2.0"
-credentials = "1.2.2"
+credentials = "1.3.0"
 drawerlayout = "1.2.0"
-firebaseAuth = "23.0.0"
-firebaseBom = "33.1.2"
-firebaseFirestore = "25.0.0"
-fragment = "1.8.2"
+espressoContrib = "3.6.1"
+firebaseAuth = "23.1.0"
+firebaseBom = "33.5.0"
+firebaseFirestore = "25.1.1"
+fragment = "1.8.4"
 glide = "4.12.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 appcompat = "1.7.0"
-lifecycleCommon = "2.8.4"
+lifecycleCommon = "2.8.6"
 material = "1.12.0"
 mockitoAndroid = "5.3.1"
 mockitoCore = "5.3.1"
-navigationFragment = "2.7.7"
-navigationUi = "2.7.7"
+navigationFragment = "2.8.3"
+navigationUi = "2.8.3"
 osmdroidAndroid = "6.1.10"
 playServicesAuth = "21.2.0"
 playServicesIdentity = "18.1.0"
 retrofit = "2.9.0"
 recyclerview = "1.3.2"
+robolectric = "4.13.2"
+uiautomator = "2.3.0"
 
 [libraries]
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "compiler" }
@@ -35,6 +38,7 @@ core-testing = { module = "androidx.arch.core:core-testing", version.ref = "core
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawerlayout" }
+espresso-contrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espressoContrib" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
@@ -56,6 +60,8 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 play-services-identity = { module = "com.google.android.gms:play-services-identity", version.ref = "playServicesIdentity" }
 retrofit2-retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
