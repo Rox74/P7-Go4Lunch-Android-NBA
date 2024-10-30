@@ -73,3 +73,16 @@ dependencies {
     implementation libs.glide
     annotationProcessor libs.compiler
 }
+
+allprojects {
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'com.google.protobuf:protobuf-javalite:3.25.1'
+            eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'com.google.protobuf' && details.requested.name == 'protobuf-lite') {
+                    details.useTarget 'com.google.protobuf:protobuf-javalite:3.25.1'
+                }
+            }
+        }
+    }
+}
