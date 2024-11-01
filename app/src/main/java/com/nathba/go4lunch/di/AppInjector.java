@@ -7,6 +7,7 @@ import com.nathba.go4lunch.repository.AuthRepository;
 import com.nathba.go4lunch.repository.LunchRepository;
 import com.nathba.go4lunch.repository.MainRepository;
 import com.nathba.go4lunch.repository.MapRepository;
+import com.nathba.go4lunch.repository.NotificationRepository;
 import com.nathba.go4lunch.repository.RestaurantRepository;
 import com.nathba.go4lunch.repository.WorkmateRepository;
 
@@ -27,6 +28,7 @@ public class AppInjector {
     private final RestaurantRepository restaurantRepository;
     private final WorkmateRepository workmateRepository;
     private final MapRepository mapRepository;
+    private final NotificationRepository notificationRepository;
 
     // Factory for creating ViewModels
     private ViewModelFactory viewModelFactory;
@@ -48,10 +50,11 @@ public class AppInjector {
         restaurantRepository = new RestaurantRepository();        // Repository for restaurant data (API, cache)
         workmateRepository = new WorkmateRepository(firestore);   // Repository for managing workmates data
         mapRepository = new MapRepository();                      // Repository for managing map and geolocation
+        notificationRepository = new NotificationRepository(firestore);  // Repository for managing notifications
 
         // Initialize ViewModelFactory with all repositories
         viewModelFactory = new ViewModelFactory(mainRepository, authRepository, lunchRepository,
-                restaurantRepository, workmateRepository, mapRepository);
+                restaurantRepository, workmateRepository, mapRepository, notificationRepository);
     }
 
     /**

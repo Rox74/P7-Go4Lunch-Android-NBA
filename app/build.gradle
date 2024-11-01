@@ -43,6 +43,7 @@ dependencies {
     implementation libs.recyclerview
     implementation libs.uiautomator
     implementation libs.espresso.contrib
+    implementation libs.work.runtime
 
     testImplementation libs.junit
     testImplementation libs.mockito.core

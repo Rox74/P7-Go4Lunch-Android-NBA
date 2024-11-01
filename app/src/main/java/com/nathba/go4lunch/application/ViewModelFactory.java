@@ -8,6 +8,7 @@ import com.nathba.go4lunch.repository.AuthRepository;
 import com.nathba.go4lunch.repository.LunchRepository;
 import com.nathba.go4lunch.repository.MainRepository;
 import com.nathba.go4lunch.repository.MapRepository;
+import com.nathba.go4lunch.repository.NotificationRepository;
 import com.nathba.go4lunch.repository.RestaurantRepository;
 import com.nathba.go4lunch.repository.WorkmateRepository;
 
@@ -25,29 +26,22 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
     private final RestaurantRepository restaurantRepository;
     private final WorkmateRepository workmateRepository;
     private final MapRepository mapRepository;
+    private final NotificationRepository notificationRepository;
 
-    /**
-     * Constructor that accepts all necessary repositories for ViewModel creation.
-     *
-     * @param mainRepository        Repository for main app data.
-     * @param authRepository        Repository for authentication.
-     * @param lunchRepository       Repository for managing lunch data.
-     * @param restaurantRepository  Repository for restaurant data.
-     * @param workmateRepository    Repository for workmate data.
-     * @param mapRepository         Repository for map and location data.
-     */
     public ViewModelFactory(MainRepository mainRepository,
                             AuthRepository authRepository,
                             LunchRepository lunchRepository,
                             RestaurantRepository restaurantRepository,
                             WorkmateRepository workmateRepository,
-                            MapRepository mapRepository) {
+                            MapRepository mapRepository,
+                            NotificationRepository notificationRepository) {
         this.mainRepository = mainRepository;
         this.authRepository = authRepository;
         this.lunchRepository = lunchRepository;
         this.restaurantRepository = restaurantRepository;
         this.workmateRepository = workmateRepository;
         this.mapRepository = mapRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     /**
@@ -76,6 +70,8 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new WorkmateViewModel(workmateRepository);
         } else if (modelClass.isAssignableFrom(MapViewModel.class)) {
             return (T) new MapViewModel(mapRepository, lunchRepository, restaurantRepository);
+        } else if (modelClass.isAssignableFrom(NotificationViewModel.class)) {
+            return (T) new NotificationViewModel(notificationRepository);
         }
 
         // Throw an exception if the ViewModel class is not recognized

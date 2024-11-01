@@ -29,6 +29,7 @@ import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.models.Workmate;
+import com.nathba.go4lunch.notification.NotificationScheduler;
 
 import org.osmdroid.util.GeoPoint;
 
@@ -179,6 +180,7 @@ public class RestaurantDetailFragment extends Fragment {
 
             // Ajouter le lunch dans Firebase via LunchRepository
             restaurantViewModel.addLunch(lunch);
+            Log.d("RestaurantDetailFragment", "Lunch ajouté pour l'utilisateur : " + workmateId);
 
             // Ajouter le restaurant dans Firebase via RestaurantRepository
             Restaurant restaurant = new Restaurant(
@@ -194,6 +196,30 @@ public class RestaurantDetailFragment extends Fragment {
                     new ArrayList<>()
             );
             restaurantViewModel.addRestaurant(restaurant);
+            Log.d("RestaurantDetailFragment", "Restaurant ajouté : " + restaurantName);
+
+            // Récupérer la liste des collègues rejoignant ce restaurant
+            restaurantViewModel.getLunchesForRestaurantToday(restaurantId).observe(getViewLifecycleOwner(), lunches -> {
+                List<String> colleaguesNames = new ArrayList<>();
+
+                // Boucle pour chaque lunch pour récupérer les noms de collègues
+                for (Lunch colleagueLunch : lunches) {
+                    workmateViewModel.getWorkmateById(colleagueLunch.getWorkmateId()).observe(getViewLifecycleOwner(), workmate -> {
+                        if (workmate != null) {
+                            colleaguesNames.add(workmate.getName());
+                            Log.d("RestaurantDetailFragment", "Collègue ajouté à la liste : " + workmate.getName());
+
+                            // Vérifie si tous les collègues sont ajoutés avant d'envoyer la notification
+                            if (colleaguesNames.size() == lunches.size()) {
+                                Log.d("RestaurantDetailFragment", "Tous les collègues récupérés. Envoi de la notification.");
+                                NotificationScheduler.sendImmediateNotification(requireContext(), restaurantName, restaurantAddress, colleaguesNames);
+                            }
+                        } else {
+                            Log.e("RestaurantDetailFragment", "Impossible de récupérer les informations pour le collègue avec ID : " + colleagueLunch.getWorkmateId());
+                        }
+                    });
+                }
+            });
 
             Toast.makeText(getContext(), "Lunch et restaurant ajoutés avec succès", Toast.LENGTH_SHORT).show();
         } else {

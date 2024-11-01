@@ -1,6 +1,12 @@
 package com.nathba.go4lunch.ui;
 
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.MenuItem;
 import android.widget.ImageView;
@@ -9,6 +15,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -23,6 +30,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
+import com.nathba.go4lunch.notification.NotificationScheduler;
 
 /**
  * MainActivity class that serves as the main entry point of the application.
@@ -37,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private MainViewModel mainViewModel;
     private ViewModelFactory viewModelFactory;
+    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +74,38 @@ public class MainActivity extends AppCompatActivity {
             mainViewModel.checkLoginState();
             if (mainViewModel.getCurrentUser().getValue() != null) {
                 navigateToFragment(R.id.nav_map_view); // Load the map view by default
+            }
+        }
+
+        // Configurer le canal de notification
+        createNotificationChannel();
+
+        // Request POST_NOTIFICATIONS permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_POST_NOTIFICATIONS);
+            }
+        }
+    }
+
+    /**
+     * Crée le canal de notification pour les déjeuners.
+     * Nécessaire pour Android 8.0 (API 26) et versions ultérieures.
+     */
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Lunch Notifications";
+            String description = "Notifications for lunch selections";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel("LunchChannel", name, importance);
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+                Log.d("MainActivity", "Notification channel 'LunchChannel' created.");
+            } else {
+                Log.e("MainActivity", "NotificationManager is null, channel not created.");
             }
         }
     }
