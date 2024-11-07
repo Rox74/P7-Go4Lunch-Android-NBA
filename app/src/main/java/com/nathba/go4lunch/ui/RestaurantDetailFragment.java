@@ -195,7 +195,7 @@ public class RestaurantDetailFragment extends Fragment {
 
                     // Ajouter le nouveau lunch
                     String lunchId = UUID.randomUUID().toString();
-                    Lunch lunch = new Lunch(lunchId, workmateId, restaurantId, lunchDate);
+                    Lunch lunch = new Lunch(lunchId, workmateId, restaurantId, restaurantName, restaurantAddress, lunchDate);
 
                     lunchViewModel.addLunch(lunch);
                     Log.d("RestaurantDetailFragment", "Nouveau lunch ajouté pour l'utilisateur : " + workmateId);

@@ -18,6 +18,12 @@ public class Lunch {
     // Identifier for the restaurant chosen for lunch
     private String restaurantId;
 
+    // Name of the restaurant
+    private String restaurantName;
+
+    // Address of the restaurant
+    private String restaurantAddress;
+
     // Date when the lunch is scheduled
     private Date date;
 
@@ -29,86 +35,69 @@ public class Lunch {
     /**
      * Parameterized constructor to create a new Lunch instance with specified values.
      *
-     * @param lunchId       Unique identifier for the lunch entry.
-     * @param workmateId    Identifier for the workmate who chose the restaurant.
-     * @param restaurantId  Identifier for the restaurant chosen for lunch.
-     * @param date          Date when the lunch is scheduled.
+     * @param lunchId           Unique identifier for the lunch entry.
+     * @param workmateId        Identifier for the workmate who chose the restaurant.
+     * @param restaurantId      Identifier for the restaurant chosen for lunch.
+     * @param restaurantName    Name of the restaurant.
+     * @param restaurantAddress Address of the restaurant.
+     * @param date              Date when the lunch is scheduled.
      */
-    public Lunch(String lunchId, String workmateId, String restaurantId, Date date) {
+    public Lunch(String lunchId, String workmateId, String restaurantId, String restaurantName, String restaurantAddress, Date date) {
         this.lunchId = lunchId;
         this.workmateId = workmateId;
         this.restaurantId = restaurantId;
+        this.restaurantName = restaurantName;
+        this.restaurantAddress = restaurantAddress;
         this.date = date;
     }
 
-    /**
-     * Gets the unique identifier for the lunch entry.
-     *
-     * @return String - Unique identifier for the lunch entry.
-     */
+
+    // Getters et setters
+
     public String getLunchId() {
         return lunchId;
     }
 
-    /**
-     * Sets the unique identifier for the lunch entry.
-     *
-     * @param lunchId - Unique identifier for the lunch entry.
-     */
     public void setLunchId(String lunchId) {
         this.lunchId = lunchId;
     }
 
-    /**
-     * Gets the identifier for the workmate who chose the restaurant.
-     *
-     * @return String - Identifier for the workmate.
-     */
     public String getWorkmateId() {
         return workmateId;
     }
 
-    /**
-     * Sets the identifier for the workmate who chose the restaurant.
-     *
-     * @param workmateId - Identifier for the workmate.
-     */
     public void setWorkmateId(String workmateId) {
         this.workmateId = workmateId;
     }
 
-    /**
-     * Gets the identifier for the restaurant chosen for lunch.
-     *
-     * @return String - Identifier for the restaurant.
-     */
     public String getRestaurantId() {
         return restaurantId;
     }
 
-    /**
-     * Sets the identifier for the restaurant chosen for lunch.
-     *
-     * @param restaurantId - Identifier for the restaurant.
-     */
     public void setRestaurantId(String restaurantId) {
         this.restaurantId = restaurantId;
     }
 
-    /**
-     * Gets the date when the lunch is scheduled.
-     *
-     * @return Date - Date of the lunch.
-     */
+    public String getRestaurantName() {
+        return restaurantName;
+    }
+
+    public void setRestaurantName(String restaurantName) {
+        this.restaurantName = restaurantName;
+    }
+
+    public String getRestaurantAddress() {
+        return restaurantAddress;
+    }
+
+    public void setRestaurantAddress(String restaurantAddress) {
+        this.restaurantAddress = restaurantAddress;
+    }
+
     public Date getDate() {
         return date;
     }
 
-    /**
-     * Sets the date when the lunch is scheduled.
-     *
-     * @param date - Date of the lunch.
-     */
     public void setDate(Date date) {
         this.date = date;
     }

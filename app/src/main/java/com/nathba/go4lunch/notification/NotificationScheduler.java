@@ -9,44 +9,45 @@ import android.os.Build;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.nathba.go4lunch.R;
 
+import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Gère l'envoi immédiat des notifications quand un utilisateur choisit un restaurant.
- */
 public class NotificationScheduler {
-    private static final String TAG = "NotificationScheduler";
+    public static void scheduleDailyNotification(Context context) {
+        // Version normale (à décommenter pour la production)
+         PeriodicWorkRequest notificationWork = new PeriodicWorkRequest.Builder(NotificationWorker.class, 24, TimeUnit.HOURS)
+                 .setInitialDelay(calculateInitialDelay(), TimeUnit.MILLISECONDS)
+                 .build();
+         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                 "DailyNotification",
+                 ExistingPeriodicWorkPolicy.REPLACE,
+                 notificationWork);
 
-    /**
-     * Envoie une notification immédiate avec les détails du déjeuner sélectionné.
-     *
-     * @param context            Contexte de l'application.
-     * @param restaurantName     Nom du restaurant sélectionné.
-     * @param restaurantAddress  Adresse du restaurant.
-     * @param colleagues         Liste des collègues qui vont déjeuner ensemble.
-     */
-    public static void sendImmediateNotification(Context context, String restaurantName, String restaurantAddress, List<String> colleagues) {
-        String colleaguesNames = String.join(", ", colleagues);  // Joindre les noms des collègues en une chaîne
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "LunchChannel")
-                .setSmallIcon(R.drawable.ic_lunch)  // Remplacer par l'icône réelle de l'application
-                .setContentTitle("Lunch Reminder")
-                .setContentText("Today’s Lunch: " + restaurantName + " at " + restaurantAddress + " with " + colleaguesNames)
-                .setPriority(NotificationCompat.PRIORITY_HIGH);
+        // Version de test avec un délai court (10 secondes pour tester rapidement les notifications)
+/*        OneTimeWorkRequest notificationTestWork = new OneTimeWorkRequest.Builder(NotificationWorker.class)
+                .setInitialDelay(10, TimeUnit.SECONDS)
+                .build();
+        WorkManager.getInstance(context).enqueue(notificationTestWork);*/
+    }
 
-        // Vérifier et demander la permission POST_NOTIFICATIONS sur Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                Log.e(TAG, "Missing POST_NOTIFICATIONS permission; notification not sent.");
-                return;
-            }
+    private static long calculateInitialDelay() {
+        Calendar now = Calendar.getInstance();
+        Calendar nextNotification = Calendar.getInstance();
+        nextNotification.set(Calendar.HOUR_OF_DAY, 12);
+        nextNotification.set(Calendar.MINUTE, 0);
+        nextNotification.set(Calendar.SECOND, 0);
+
+        if (now.after(nextNotification)) {
+            nextNotification.add(Calendar.DAY_OF_MONTH, 1);
         }
-
-        // Envoyer la notification
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        notificationManager.notify(1, builder.build());
-        Log.d(TAG, "Immediate notification sent for lunch at " + restaurantName);
+        return nextNotification.getTimeInMillis() - now.getTimeInMillis();
     }
 }

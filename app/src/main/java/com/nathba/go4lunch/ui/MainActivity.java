@@ -86,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_POST_NOTIFICATIONS);
             }
         }
+
+        // Planification des notifications quotidiennes
+        NotificationScheduler.scheduleDailyNotification(this);
     }
 
     /**
