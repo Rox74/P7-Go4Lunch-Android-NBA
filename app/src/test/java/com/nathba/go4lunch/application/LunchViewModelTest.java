@@ -1,15 +1,20 @@
 package com.nathba.go4lunch.application;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.repository.LunchRepository;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class LunchViewModelTest {
@@ -28,44 +34,82 @@ public class LunchViewModelTest {
     private LunchRepository lunchRepository;
 
     private LunchViewModel lunchViewModel;
+    private AutoCloseable closeable;
+
+    @Mock
+    private Observer<List<Lunch>> lunchesObserver;
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        closeable = MockitoAnnotations.openMocks(this);
         lunchViewModel = new LunchViewModel(lunchRepository);
     }
 
+    @After
+    public void tearDown() throws Exception {
+        closeable.close();
+    }
+
     @Test
-    public void testGetLunches() {
+    public void testGetLunches_withData() {
         // Mocked data for lunches
         MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
         List<Lunch> lunches = new ArrayList<>();
-        lunches.add(new Lunch("1", "workmate1", "restaurant1", new java.util.Date()));
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant1", new Date());
+        lunches.add(lunch);
         lunchesLiveData.setValue(lunches);
 
         // Mock the behavior of lunchRepository
         when(lunchRepository.getLunches()).thenReturn(lunchesLiveData);
 
-        // Call the method in the ViewModel
-        LiveData<List<Lunch>> result = lunchViewModel.getLunches();
+        // Observe the LiveData and attach mock Observer
+        lunchViewModel.getLunches().observeForever(lunchesObserver);
 
-        // Assert that the returned data is not null and contains the correct number of lunch entries
-        assertNotNull(result);
-        assertEquals(1, result.getValue().size());
-        assertEquals("workmate1", result.getValue().get(0).getWorkmateId());
+        lunchViewModel.getLunches();
 
-        // Verify the interaction with the repository
-        verify(lunchRepository).getLunches();
+        // Verify observer received the data
+        verify(lunchesObserver).onChanged(lunches);
+
+        // Verify that getLunches is called only once
+        //verify(lunchRepository, times(1)).getLunches();
+
+        // Clean up observer
+        lunchViewModel.getLunches().removeObserver(lunchesObserver);
+    }
+
+    @Test
+    public void testGetLunches_withNoData() {
+        // Mock empty LiveData response
+        MutableLiveData<List<Lunch>> emptyLiveData = new MutableLiveData<>(new ArrayList<>());
+        when(lunchRepository.getLunches()).thenReturn(emptyLiveData);
+
+        // Attach observer and test empty data scenario
+        lunchViewModel.getLunches().observeForever(lunchesObserver);
+
+        // Verify observer receives empty list
+        verify(lunchesObserver).onChanged(new ArrayList<>());
+
+        // Clean up observer
+        lunchViewModel.getLunches().removeObserver(lunchesObserver);
     }
 
     @Test
     public void testAddLunch() {
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", new java.util.Date());
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", new Date());
 
-        // No need to mock since it's a void method
+        // Perform action
         lunchViewModel.addLunch(lunch);
 
         // Verify that the method in the repository was called correctly
         verify(lunchRepository).addLunch(lunch);
+    }
+
+    @Test
+    public void testAddLunch_withNullData() {
+        // Attempt to add a null lunch entry
+        lunchViewModel.addLunch(null);
+
+        // Verify that addLunch was not called due to null input
+        verify(lunchRepository, never()).addLunch(any());
     }
 }

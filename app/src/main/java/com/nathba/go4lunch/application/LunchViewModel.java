@@ -1,11 +1,13 @@
 package com.nathba.go4lunch.application;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.repository.LunchRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,23 +32,14 @@ public class LunchViewModel extends ViewModel {
         this.lunches = lunchRepository.getLunches();
     }
 
-    /**
-     * Returns LiveData object containing the list of lunches.
-     * Observers can subscribe to this LiveData to receive updates on the list of lunches.
-     *
-     * @return LiveData<List<Lunch>> - LiveData containing the list of lunches.
-     */
     public LiveData<List<Lunch>> getLunches() {
-        return lunches;
+        // Retourne toujours un LiveData, même si aucun lunch n'est disponible
+        return lunchRepository.getLunches() != null ? lunchRepository.getLunches() : new MutableLiveData<>(new ArrayList<>());
     }
 
-    /**
-     * Adds a new lunch item to the repository.
-     * This method will update the list of lunches, and the LiveData will be updated accordingly.
-     *
-     * @param lunch The Lunch object to be added.
-     */
     public void addLunch(Lunch lunch) {
-        lunchRepository.addLunch(lunch); // Add the lunch item to the repository
+        if (lunch != null) {
+            lunchRepository.addLunch(lunch);
+        }
     }
 }

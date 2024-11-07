@@ -1,7 +1,5 @@
 package com.nathba.go4lunch.application;
 
-import static org.junit.Assert.assertEquals;
-
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseUser;
 import com.nathba.go4lunch.repository.AuthRepository;

@@ -56,7 +56,7 @@ public class WorkmateFragmentTest {
         // Simuler un clic au centre de l'écran pour sélectionner le compte Google
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
-        int y = (int) (device.getDisplayHeight() / 1.8);
+        int y = (int) (device.getDisplayHeight() / 2.1);
 
         device.click(x, y);  // Clic au centre de l'écran
 
