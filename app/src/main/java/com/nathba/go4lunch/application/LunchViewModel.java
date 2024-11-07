@@ -4,10 +4,12 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.google.android.gms.tasks.Task;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.repository.LunchRepository;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -41,5 +43,25 @@ public class LunchViewModel extends ViewModel {
         if (lunch != null) {
             lunchRepository.addLunch(lunch);
         }
+    }
+
+    /**
+     * Supprime les lunchs d'un utilisateur pour une date donnée afin d'éviter les doublons.
+     *
+     * @param workmateId L'identifiant de l'utilisateur.
+     * @param date       La date du lunch à supprimer.
+     * @return Une tâche qui complète la suppression.
+     */
+    public Task<Void> deleteUserLunchForDate(String workmateId, Date date) {
+        return lunchRepository.deleteUserLunchForDate(workmateId, date);
+    }
+
+    /**
+     * Supprime tous les lunchs périmés dans Firebase.
+     *
+     * @return Une tâche qui complète la suppression des lunchs périmés.
+     */
+    public Task<Void> deleteExpiredLunches() {
+        return lunchRepository.deleteExpiredLunches();
     }
 }

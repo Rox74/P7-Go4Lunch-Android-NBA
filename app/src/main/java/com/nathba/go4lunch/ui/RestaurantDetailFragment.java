@@ -22,18 +22,16 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.nathba.go4lunch.R;
+import com.nathba.go4lunch.application.LunchViewModel;
 import com.nathba.go4lunch.application.RestaurantViewModel;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.application.WorkmateViewModel;
 import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.models.Lunch;
-import com.nathba.go4lunch.models.Restaurant;
-import com.nathba.go4lunch.models.Workmate;
-import com.nathba.go4lunch.notification.NotificationScheduler;
 
 import org.osmdroid.util.GeoPoint;
 
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +40,7 @@ public class RestaurantDetailFragment extends Fragment {
 
     private RestaurantViewModel restaurantViewModel;
     private WorkmateViewModel workmateViewModel;
+    private LunchViewModel lunchViewModel;
     private ViewModelFactory viewModelFactory;
 
     private String restaurantId;
@@ -80,10 +79,11 @@ public class RestaurantDetailFragment extends Fragment {
         // Mettre à jour l'UI avec les infos du restaurant
         displayRestaurantDetails(view);
 
-        // Initialiser le ViewModel
+        // Initialiser les ViewModels
         viewModelFactory = AppInjector.getInstance().getViewModelFactory();
         restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
         workmateViewModel = new ViewModelProvider(this, viewModelFactory).get(WorkmateViewModel.class);
+        lunchViewModel = new ViewModelProvider(this, viewModelFactory).get(LunchViewModel.class);
 
         // Récupérer la liste des workmates qui rejoignent ce restaurant
         joiningWorkmatesList = view.findViewById(R.id.joining_workmates_list);
@@ -172,56 +172,37 @@ public class RestaurantDetailFragment extends Fragment {
     private void addLunchToFirebase() {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            String lunchId = UUID.randomUUID().toString();  // Générer un ID unique pour le lunch
             String workmateId = currentUser.getUid();
-            Date currentDate = new Date();  // Date actuelle
 
-            Lunch lunch = new Lunch(lunchId, workmateId, restaurantId, currentDate);
+            // Supprimer les lunchs périmés avant toute opération
+            lunchViewModel.deleteExpiredLunches().addOnSuccessListener(aVoid -> {
+                Log.d("RestaurantDetailFragment", "Lunchs périmés supprimés avec succès");
 
-            // Ajouter le lunch dans Firebase via LunchRepository
-            restaurantViewModel.addLunch(lunch);
-            Log.d("RestaurantDetailFragment", "Lunch ajouté pour l'utilisateur : " + workmateId);
-
-            // Ajouter le restaurant dans Firebase via RestaurantRepository
-            Restaurant restaurant = new Restaurant(
-                    restaurantId,
-                    restaurantName,
-                    restaurantAddress,
-                    restaurantPhotoUrl,
-                    restaurantRating != null ? restaurantRating : 0.0,
-                    restaurantLocation,
-                    restaurantPhoneNumber != null ? restaurantPhoneNumber : "",
-                    restaurantWebsite != null ? restaurantWebsite : "",
-                    restaurantOpeningHours != null ? restaurantOpeningHours : "",
-                    new ArrayList<>()
-            );
-            restaurantViewModel.addRestaurant(restaurant);
-            Log.d("RestaurantDetailFragment", "Restaurant ajouté : " + restaurantName);
-
-            // Récupérer la liste des collègues rejoignant ce restaurant
-            restaurantViewModel.getLunchesForRestaurantToday(restaurantId).observe(getViewLifecycleOwner(), lunches -> {
-                List<String> colleaguesNames = new ArrayList<>();
-
-                // Boucle pour chaque lunch pour récupérer les noms de collègues
-                for (Lunch colleagueLunch : lunches) {
-                    workmateViewModel.getWorkmateById(colleagueLunch.getWorkmateId()).observe(getViewLifecycleOwner(), workmate -> {
-                        if (workmate != null) {
-                            colleaguesNames.add(workmate.getName());
-                            Log.d("RestaurantDetailFragment", "Collègue ajouté à la liste : " + workmate.getName());
-
-                            // Vérifie si tous les collègues sont ajoutés avant d'envoyer la notification
-                            if (colleaguesNames.size() == lunches.size()) {
-                                Log.d("RestaurantDetailFragment", "Tous les collègues récupérés. Envoi de la notification.");
-                                NotificationScheduler.sendImmediateNotification(requireContext(), restaurantName, restaurantAddress, colleaguesNames);
-                            }
-                        } else {
-                            Log.e("RestaurantDetailFragment", "Impossible de récupérer les informations pour le collègue avec ID : " + colleagueLunch.getWorkmateId());
-                        }
-                    });
+                // Fixer la date du lunch à midi
+                Calendar calendar = Calendar.getInstance();
+                if (calendar.get(Calendar.HOUR_OF_DAY) >= 12) {
+                    calendar.add(Calendar.DAY_OF_MONTH, 1); // Ajouter un jour si après midi
                 }
-            });
+                calendar.set(Calendar.HOUR_OF_DAY, 12);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                Date lunchDate = calendar.getTime();
 
-            Toast.makeText(getContext(), "Lunch et restaurant ajoutés avec succès", Toast.LENGTH_SHORT).show();
+                // Supprimer les anciens lunchs pour cet utilisateur pour cette date
+                lunchViewModel.deleteUserLunchForDate(workmateId, lunchDate).addOnSuccessListener(aVoid2 -> {
+                    Log.d("RestaurantDetailFragment", "Lunch précédent supprimé pour l'utilisateur : " + workmateId);
+
+                    // Ajouter le nouveau lunch
+                    String lunchId = UUID.randomUUID().toString();
+                    Lunch lunch = new Lunch(lunchId, workmateId, restaurantId, lunchDate);
+
+                    lunchViewModel.addLunch(lunch);
+                    Log.d("RestaurantDetailFragment", "Nouveau lunch ajouté pour l'utilisateur : " + workmateId);
+
+                    Toast.makeText(getContext(), "Lunch mis à jour pour la date sélectionnée", Toast.LENGTH_SHORT).show();
+                }).addOnFailureListener(e -> Log.e("RestaurantDetailFragment", "Erreur lors de la suppression du lunch précédent", e));
+            }).addOnFailureListener(e -> Log.e("RestaurantDetailFragment", "Erreur lors de la suppression des lunchs périmés", e));
         } else {
             Toast.makeText(getContext(), "Utilisateur non connecté", Toast.LENGTH_SHORT).show();
         }

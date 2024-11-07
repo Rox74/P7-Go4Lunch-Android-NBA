@@ -3,10 +3,13 @@ package com.nathba.go4lunch.repository;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import com.nathba.go4lunch.models.Lunch;
 
 import java.util.ArrayList;
@@ -99,5 +102,52 @@ public class LunchRepository {
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTime();
+    }
+
+    /**
+     * Supprime les lunchs de l'utilisateur pour une date donnée afin d'éviter les doublons.
+     *
+     * @param workmateId L'identifiant de l'utilisateur.
+     * @param date       La date du lunch à supprimer.
+     * @return Une tâche qui complète la suppression.
+     */
+    public Task<Void> deleteUserLunchForDate(String workmateId, Date date) {
+        return lunchesCollection
+                .whereEqualTo("workmateId", workmateId)
+                .whereEqualTo("date", date)
+                .get()
+                .continueWithTask(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        WriteBatch batch = lunchesCollection.getFirestore().batch();
+                        for (DocumentSnapshot document : task.getResult()) {
+                            batch.delete(document.getReference());
+                        }
+                        return batch.commit();
+                    }
+                    return Tasks.forResult(null);
+                });
+    }
+
+    /**
+     * Supprime tous les lunchs dont la date est antérieure à aujourd'hui.
+     *
+     * @return Une tâche qui complète la suppression des lunchs périmés.
+     */
+    public Task<Void> deleteExpiredLunches() {
+        Date today = getToday(); // Utiliser la méthode existante pour obtenir la date d'aujourd'hui
+
+        return lunchesCollection
+                .whereLessThan("date", today) // Rechercher les lunchs avec une date avant aujourd'hui
+                .get()
+                .continueWithTask(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        WriteBatch batch = lunchesCollection.getFirestore().batch();
+                        for (DocumentSnapshot document : task.getResult()) {
+                            batch.delete(document.getReference());
+                        }
+                        return batch.commit(); // Effectuer la suppression en lot
+                    }
+                    return Tasks.forResult(null); // Aucun lunch à supprimer
+                });
     }
 }
