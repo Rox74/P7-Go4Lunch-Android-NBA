@@ -1,5 +1,7 @@
 package com.nathba.go4lunch.application;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -15,6 +17,7 @@ public class RestaurantViewModel extends ViewModel {
     private final RestaurantRepository restaurantRepository;
     private final LunchRepository lunchRepository;
     private LiveData<List<Restaurant>> restaurants;
+    private static final String TAG = "RestaurantViewModel";
 
     public RestaurantViewModel(RestaurantRepository restaurantRepository, LunchRepository lunchRepository) {
         this.restaurantRepository = restaurantRepository;
@@ -31,6 +34,12 @@ public class RestaurantViewModel extends ViewModel {
         return restaurantRepository.getRestaurants(latitude, longitude);
     }
 
+    // Nouvelle méthode pour récupérer les détails des restaurants en bulk depuis Yelp
+    public LiveData<List<Restaurant>> fetchRestaurantDetailsBulk(List<Restaurant> restaurants) {
+        Log.d(TAG, "Calling fetchRestaurantDetailsBulk with " + restaurants.size() + " restaurants");
+        return restaurantRepository.fetchRestaurantsBulk(restaurants);
+    }
+
     // Utiliser LunchRepository pour ajouter un lunch
     public void addLunch(Lunch lunch) {
         lunchRepository.addLunch(lunch);
@@ -43,5 +52,11 @@ public class RestaurantViewModel extends ViewModel {
     // Récupérer le nombre de lunchs pour un restaurant spécifique
     public LiveData<Integer> getLunchCountForRestaurant(String restaurantId) {
         return lunchRepository.getLunchCountForRestaurant(restaurantId);
+    }
+
+    // Récupérer la liste des restaurants déjà détaillés
+    public LiveData<List<Restaurant>> getDetailedRestaurants() {
+        // Retourne les restaurants détaillés déjà chargés dans le repository
+        return restaurantRepository.getCachedRestaurants();
     }
 }

@@ -31,12 +31,14 @@ import retrofit2.Response;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RestaurantRepository {
 
     private final OverpassApi overpassApi;
     private final YelpApi yelpApi;
     private List<Restaurant> cachedRestaurants = new ArrayList<>(); // Cache des restaurants
+    private final MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>();
     private final FirebaseFirestore firestore;
     private static final String TAG = "RestaurantRepository";
 
@@ -96,7 +98,7 @@ public class RestaurantRepository {
 
         // Si pas trouvé dans le cache, fetch depuis Yelp
         Log.d(TAG, "Restaurant not found in cache, fetching details from Yelp API");
-        Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", new ArrayList<>());
+        Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "");
         fetchYelpDetails(basicRestaurant, location, callback);
     }
 
@@ -138,16 +140,15 @@ public class RestaurantRepository {
         List<Restaurant> restaurants = new ArrayList<>();
         for (OverpassResponse.Element element : elements) {
             Restaurant restaurant = new Restaurant(
-                    element.id,  // restaurantId
-                    element.tags.name,  // name
-                    element.tags.address,  // address
-                    null,  // photoUrl
-                    0.0,  // rating
-                    new GeoPoint(element.lat, element.lon),  // location
-                    "",  // phoneNumber
-                    "",  // yelpUrl
-                    "",  // openingHours
-                    new ArrayList<>()  // Liste de Lunchs
+                    element.id,                               // restaurantId
+                    element.tags.name,                        // name
+                    element.tags.address,                     // address
+                    null,                                     // photoUrl
+                    0.0,                                      // rating
+                    new GeoPoint(element.lat, element.lon),   // location
+                    "",                                       // phoneNumber
+                    "",                                       // yelpUrl
+                    ""                                        // openingHours
             );
             restaurants.add(restaurant);
         }
@@ -164,5 +165,56 @@ public class RestaurantRepository {
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error adding restaurant: ", e);
                 });
+    }
+
+    public LiveData<List<Restaurant>> fetchRestaurantsBulk(List<Restaurant> restaurants) {
+        Log.d(TAG, "Starting bulk fetch for Yelp details with " + restaurants.size() + " restaurants");
+
+        List<Call<YelpBusinessResponse>> calls = yelpApi.getBulkRestaurantDetails(restaurants);
+        List<Restaurant> updatedRestaurants = new ArrayList<>(restaurants);
+        AtomicInteger pendingCalls = new AtomicInteger(calls.size());
+
+        for (int i = 0; i < calls.size(); i++) {
+            final int index = i;
+            calls.get(i).enqueue(new Callback<YelpBusinessResponse>() {
+                @Override
+                public void onResponse(Call<YelpBusinessResponse> call, Response<YelpBusinessResponse> response) {
+                    if (response.isSuccessful() && response.body() != null && !response.body().businesses.isEmpty()) {
+                        YelpBusinessResponse.YelpBusiness yelpData = response.body().businesses.get(0);
+                        Restaurant restaurant = updatedRestaurants.get(index);
+                        restaurant.setAddress(yelpData.location.address);
+                        restaurant.setPhotoUrl(yelpData.imageUrl);
+                        restaurant.setRating(yelpData.rating);
+                        restaurant.setPhoneNumber(yelpData.phone);
+                        restaurant.setYelpUrl(yelpData.url);
+                        Log.d(TAG, "Yelp details fetched for restaurant: " + restaurant.getName());
+                    } else {
+                        Log.e(TAG, "Failed to fetch Yelp data for restaurant at index " + index);
+                    }
+                    if (pendingCalls.decrementAndGet() == 0) {
+                        cachedRestaurants = updatedRestaurants;
+                        Log.d(TAG, "Bulk fetch completed, updating LiveData");
+                        restaurantsLiveData.postValue(updatedRestaurants);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<YelpBusinessResponse> call, Throwable t) {
+                    Log.e(TAG, "Yelp API call failed: " + t.getMessage() + " for restaurant at index " + index);
+                    if (pendingCalls.decrementAndGet() == 0) {
+                        Log.d(TAG, "Bulk fetch completed with errors, updating LiveData");
+                        restaurantsLiveData.postValue(updatedRestaurants);
+                    }
+                }
+            });
+        }
+
+        return restaurantsLiveData;
+    }
+
+    public LiveData<List<Restaurant>> getCachedRestaurants() {
+        // Retourne les restaurants mis en cache dans un LiveData
+        restaurantsLiveData.setValue(cachedRestaurants);
+        return restaurantsLiveData;
     }
 }

@@ -29,6 +29,8 @@ public class MapViewModel extends ViewModel {
     private final MutableLiveData<Location> userLocation = new MutableLiveData<>();
     private final LiveData<List<Lunch>> lunches;
     private static final String TAG = "MapViewModel";
+    private boolean detailsFetched = false;
+    private final MutableLiveData<List<Restaurant>> detailedRestaurants = new MutableLiveData<>();
 
     public MapViewModel(MapRepository mapRepository, LunchRepository lunchRepository, RestaurantRepository restaurantRepository) {
         this.mapRepository = mapRepository;
@@ -53,7 +55,7 @@ public class MapViewModel extends ViewModel {
             public void onError(Throwable t) {
                 Log.e(TAG, "Failed to retrieve restaurant details: " + t.getMessage());
                 // Créer une instance de Restaurant avec des valeurs par défaut
-                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", new ArrayList<>());
+                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "");
                 selectedRestaurant.setValue(basicRestaurant); // Utiliser des détails de base en cas d'erreur
             }
         });
@@ -93,5 +95,18 @@ public class MapViewModel extends ViewModel {
     public void loadRestaurants(double latitude, double longitude) {
         Log.d(TAG, "Loading restaurants at latitude: " + latitude + ", longitude: " + longitude);
         mapRepository.loadRestaurants(latitude, longitude);
+    }
+
+    // Méthode pour charger les restaurants avec détails en bulk
+    public void fetchRestaurantsDetailsIfNeeded(List<Restaurant> restaurants) {
+        if (!detailsFetched) {
+            restaurantRepository.fetchRestaurantsBulk(restaurants).observeForever(detailedRestaurants::setValue);
+            detailsFetched = true;  // Marquer les détails comme chargés
+        }
+    }
+
+    // Observer pour récupérer la liste des restaurants détaillés
+    public LiveData<List<Restaurant>> getDetailedRestaurants() {
+        return detailedRestaurants;
     }
 }

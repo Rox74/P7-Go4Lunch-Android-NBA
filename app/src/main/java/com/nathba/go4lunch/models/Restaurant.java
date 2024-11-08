@@ -6,9 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Represents a restaurant with details such as ID, name, address, photo URL, rating, and location.
- */
 public class Restaurant {
 
     // Unique identifier for the restaurant
@@ -33,8 +30,6 @@ public class Restaurant {
 
     private String yelpUrl;
 
-    private List<Lunch> lunches;
-
     private String openingHours;  // Horaires d'ouverture
 
     /**
@@ -44,7 +39,7 @@ public class Restaurant {
     public Restaurant() {}
 
     // Constructor avec horaires d'ouverture
-    public Restaurant(String restaurantId, String name, String address, String photoUrl, double rating, GeoPoint location, String phoneNumber, String yelpUrl, String openingHours, List<Lunch> lunches) {
+    public Restaurant(String restaurantId, String name, String address, String photoUrl, double rating, GeoPoint location, String phoneNumber, String yelpUrl, String openingHours) {
         this.restaurantId = restaurantId;
         this.name = name;
         this.address = address;
@@ -54,156 +49,49 @@ public class Restaurant {
         this.phoneNumber = phoneNumber;
         this.yelpUrl = yelpUrl;
         this.openingHours = openingHours;
-        this.lunches = lunches != null ? lunches : new ArrayList<>();
     }
 
-    /**
-     * Gets the unique identifier of the restaurant.
-     *
-     * @return the restaurant ID
-     */
-    public String getRestaurantId() {
-        return restaurantId;
-    }
 
-    /**
-     * Sets the unique identifier of the restaurant.
-     *
-     * @param restaurantId the restaurant ID to set
-     */
-    public void setRestaurantId(String restaurantId) {
-        this.restaurantId = restaurantId;
-    }
+    // Getters et setters pour les autres champs
 
-    /**
-     * Gets the name of the restaurant.
-     *
-     * @return the name of the restaurant
-     */
-    public String getName() {
-        return name;
-    }
+    public String getRestaurantId() { return restaurantId; }
 
-    /**
-     * Sets the name of the restaurant.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
+    public void setRestaurantId(String restaurantId) { this.restaurantId = restaurantId; }
 
-    /**
-     * Gets the address of the restaurant.
-     *
-     * @return the address of the restaurant
-     */
-    public String getAddress() {
-        return address;
-    }
+    public String getName() { return name; }
 
-    /**
-     * Sets the address of the restaurant.
-     *
-     * @param address the address to set
-     */
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    public void setName(String name) { this.name = name; }
 
-    /**
-     * Gets the URL of the restaurant's photo.
-     *
-     * @return the photo URL
-     */
-    public String getPhotoUrl() {
-        return photoUrl;
-    }
+    public String getAddress() { return address; }
 
-    /**
-     * Sets the URL of the restaurant's photo.
-     *
-     * @param photoUrl the photo URL to set
-     */
-    public void setPhotoUrl(String photoUrl) {
-        this.photoUrl = photoUrl;
-    }
+    public void setAddress(String address) { this.address = address; }
 
-    /**
-     * Gets the rating of the restaurant.
-     *
-     * @return the rating of the restaurant
-     */
-    public double getRating() {
-        return rating;
-    }
+    public String getPhotoUrl() { return photoUrl; }
 
-    /**
-     * Sets the rating of the restaurant.
-     *
-     * @param rating the rating to set
-     */
-    public void setRating(double rating) {
-        this.rating = rating;
-    }
+    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 
-    /**
-     * Gets the geographical location of the restaurant.
-     *
-     * @return the location of the restaurant
-     */
-    public GeoPoint getLocation() {
-        return location;
-    }
+    public double getRating() { return rating; }
 
-    /**
-     * Sets the geographical location of the restaurant.
-     *
-     * @param location the location to set
-     */
-    public void setLocation(GeoPoint location) {
-        this.location = location;
-    }
+    public void setRating(double rating) { this.rating = rating; }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public GeoPoint getLocation() { return location; }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+    public void setLocation(GeoPoint location) { this.location = location; }
 
-    public String getYelpUrl() {
-        return yelpUrl;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
 
-    public void setYelpUrl(String yelpUrl) {
-        this.yelpUrl = yelpUrl;
-    }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public List<Lunch> getLunches() {
-        return lunches;
-    }
+    public String getYelpUrl() { return yelpUrl; }
 
-    public void setLunches(List<Lunch> lunches) {
-        this.lunches = lunches;
-    }
+    public void setYelpUrl(String yelpUrl) { this.yelpUrl = yelpUrl; }
 
-    public String getOpeningHours() {
-        return openingHours;
-    }
+    public String getOpeningHours() { return openingHours; }
 
-    public void setOpeningHours(String openingHours) {
-        this.openingHours = openingHours;
-    }
+    public void setOpeningHours(String openingHours) { this.openingHours = openingHours; }
 
-    /**
-     * Checks if this restaurant is equal to another object.
-     * Two restaurants are considered equal if they have the same ID, name, address, photo URL, rating, and location.
-     *
-     * @param o the object to compare with
-     * @return true if this restaurant is equal to the other object, false otherwise
-     */
+
+    // Méthodes equals et hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -217,12 +105,6 @@ public class Restaurant {
                 Objects.equals(location, that.location);
     }
 
-    /**
-     * Returns a hash code value for this restaurant.
-     * The hash code is calculated based on the restaurant's ID, name, address, photo URL, rating, and location.
-     *
-     * @return the hash code value for this restaurant
-     */
     @Override
     public int hashCode() {
         return Objects.hash(restaurantId, name, address, photoUrl, rating, location);

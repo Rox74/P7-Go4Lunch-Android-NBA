@@ -38,9 +38,9 @@ import java.util.UUID;
 
 public class RestaurantDetailFragment extends Fragment {
 
-    private RestaurantViewModel restaurantViewModel;
     private WorkmateViewModel workmateViewModel;
     private LunchViewModel lunchViewModel;
+    private RestaurantViewModel restaurantViewModel;
     private ViewModelFactory viewModelFactory;
 
     private String restaurantId;
@@ -52,7 +52,6 @@ public class RestaurantDetailFragment extends Fragment {
     private String restaurantOpeningHours;
     private Double restaurantRating;
     private GeoPoint restaurantLocation;
-
 
     private LinearLayout joiningWorkmatesList;
 
@@ -79,11 +78,11 @@ public class RestaurantDetailFragment extends Fragment {
         // Mettre à jour l'UI avec les infos du restaurant
         displayRestaurantDetails(view);
 
-        // Initialiser les ViewModels
+        // Initialiser les ViewModels pour les workmates et lunchs uniquement
         viewModelFactory = AppInjector.getInstance().getViewModelFactory();
-        restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
         workmateViewModel = new ViewModelProvider(this, viewModelFactory).get(WorkmateViewModel.class);
         lunchViewModel = new ViewModelProvider(this, viewModelFactory).get(LunchViewModel.class);
+        restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
 
         // Récupérer la liste des workmates qui rejoignent ce restaurant
         joiningWorkmatesList = view.findViewById(R.id.joining_workmates_list);

@@ -1,6 +1,10 @@
 package com.nathba.go4lunch.api;
 
+import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.models.YelpBusinessResponse;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -45,5 +49,18 @@ public class YelpApi {
         Call<YelpBusinessResponse> searchRestaurants(
                 @Query("term") String term,
                 @Query("location") String location);
+    }
+
+    // Récupérer les détails en bulk
+    public List<Call<YelpBusinessResponse>> getBulkRestaurantDetails(List<Restaurant> restaurants) {
+        List<Call<YelpBusinessResponse>> calls = new ArrayList<>();
+        for (Restaurant restaurant : restaurants) {
+            Call<YelpBusinessResponse> call = yelpService.searchRestaurants(
+                    restaurant.getName(),
+                    restaurant.getLocation().getLatitude() + "," + restaurant.getLocation().getLongitude()
+            );
+            calls.add(call);
+        }
+        return calls;
     }
 }

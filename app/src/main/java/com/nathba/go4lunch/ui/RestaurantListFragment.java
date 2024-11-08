@@ -39,19 +39,18 @@ public class RestaurantListFragment extends Fragment {
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Observer les changements dans les restaurants
-        observeRestaurants();
+        // Observer les changements dans les restaurants détaillés
+        observeDetailedRestaurants();
 
         return view;
     }
 
-    private void observeRestaurants() {
-        double latitude = 47.3123;  // Exemple de latitude
-        double longitude = 5.0914;  // Exemple de longitude
-
-        restaurantViewModel.getRestaurants(latitude, longitude).observe(getViewLifecycleOwner(), restaurants -> {
-            if (restaurants != null && !restaurants.isEmpty()) {
-                adapter.submitList(restaurants);
+    private void observeDetailedRestaurants() {
+        // Observer directement la liste des restaurants détaillés
+        restaurantViewModel.getDetailedRestaurants().observe(getViewLifecycleOwner(), detailedRestaurants -> {
+            if (detailedRestaurants != null && !detailedRestaurants.isEmpty()) {
+                // Mettre à jour l'adaptateur avec les restaurants détaillés
+                adapter.submitList(detailedRestaurants);
             }
         });
     }

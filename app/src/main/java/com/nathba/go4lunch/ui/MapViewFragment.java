@@ -60,8 +60,8 @@ public class MapViewFragment extends Fragment implements LocationListener {
     private ViewModelFactory viewModelFactory;
     private LocationManager locationManager;
     private Marker userLocationMarker;
+    private boolean isInitialFetchDone = false;  // Indicateur pour le chargement initial des détails
     private boolean isInitialCenteringDone = false;
-    private List<Restaurant> restaurantList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -88,7 +88,13 @@ public class MapViewFragment extends Fragment implements LocationListener {
         // Initialize MapViewModel using ViewModelFactory
         mapViewModel = new ViewModelProvider(this, viewModelFactory).get(MapViewModel.class);
 
-        // Observe changes in the selected restaurant
+        // Observer pour les restaurants détaillés
+        mapViewModel.getDetailedRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
+            List<Lunch> lunches = mapViewModel.getLunches().getValue();
+            displayRestaurants(restaurants, lunches);
+        });
+
+        // Observer le restaurant sélectionné pour ouvrir les détails
         mapViewModel.getSelectedRestaurant().observe(getViewLifecycleOwner(), restaurant -> {
             if (restaurant != null) {
                 openRestaurantDetailFragment(restaurant);
@@ -98,14 +104,6 @@ public class MapViewFragment extends Fragment implements LocationListener {
         // Setup the map view
         initializeMap();
 
-        mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
-            List<Lunch> lunches = mapViewModel.getLunches().getValue();
-            displayRestaurants(restaurants, lunches);  // Passer les lunchs pour vérifier si un restaurant est associé
-        });
-
-        // Observe changes in the ViewModel
-        // observeViewModel();
-
         // Request location updates from the system
         requestLocationUpdates();
 
@@ -114,7 +112,7 @@ public class MapViewFragment extends Fragment implements LocationListener {
         btnGeolocate.setOnClickListener(v -> {
             Location location = mapViewModel.getUserLocation().getValue();
             if (location != null) {
-                updateUserLocationOnMap(location); // Recentre la carte sur la position de l'utilisateur
+                fetchAndDisplayRestaurants(location);  // Charger et afficher les restaurants avec détails
             } else {
                 Toast.makeText(requireContext(), "La position de l'utilisateur est inconnue.", Toast.LENGTH_SHORT).show();
             }
@@ -132,18 +130,6 @@ public class MapViewFragment extends Fragment implements LocationListener {
 
         GeoPoint startPoint = new GeoPoint(47.3123, 5.0914); // Default
         mapView.getController().setCenter(startPoint);
-    }
-
-    /**
-     * Observer les données des restaurants et la position de l'utilisateur.
-     */
-    private void observeViewModel() {
-        // Observer les données des restaurants
-        mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
-            List<Lunch> lunches = mapViewModel.getLunches().getValue();
-            displayRestaurants(restaurants, lunches);  // Passer les lunchs pour vérifier si un restaurant est associé
-        });
-        mapViewModel.getUserLocation().observe(getViewLifecycleOwner(), this::updateUserLocationOnMap);
     }
 
     /**
@@ -172,10 +158,15 @@ public class MapViewFragment extends Fragment implements LocationListener {
         if (isLocationAccurate(location)) {
             mapViewModel.setUserLocation(location);
 
-            // Appeler MapRepository pour charger les restaurants en fonction de la localisation de l'utilisateur
+            // Charger les restaurants pour la localisation de l'utilisateur
             double latitude = location.getLatitude();
             double longitude = location.getLongitude();
-            mapViewModel.loadRestaurants(latitude, longitude);  // Appel avec les coordonnées
+            mapViewModel.loadRestaurants(latitude, longitude);
+
+            if (!isInitialFetchDone) {
+                fetchAndDisplayRestaurants(location);  // Charger les restaurants avec détails la première fois
+                isInitialFetchDone = true;
+            }
 
             if (!isInitialCenteringDone) {
                 updateUserLocationOnMap(location);
@@ -185,12 +176,28 @@ public class MapViewFragment extends Fragment implements LocationListener {
     }
 
     /**
-     * Checks if the location accuracy is within the acceptable range.
-     * @param location The location to check.
-     * @return True if the location accuracy is acceptable, otherwise false.
+     * Vérifie si la précision de la localisation est dans la plage acceptable.
+     * @param location La localisation à vérifier.
+     * @return True si la précision de la localisation est acceptable, sinon false.
      */
     private boolean isLocationAccurate(Location location) {
         return location.getAccuracy() <= MIN_ACCURACY;
+    }
+
+    /**
+     * Récupère et affiche les restaurants en fonction de la localisation avec des détails complets.
+     * @param location La localisation de l'utilisateur.
+     */
+    private void fetchAndDisplayRestaurants(Location location) {
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+
+        mapViewModel.loadRestaurants(latitude, longitude);
+
+        // Observer la liste des restaurants et déclencher le fetch en bulk si nécessaire
+        mapViewModel.getRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
+            mapViewModel.fetchRestaurantsDetailsIfNeeded(restaurants);  // Charger les détails si besoin
+        });
     }
 
     /**
@@ -218,22 +225,10 @@ public class MapViewFragment extends Fragment implements LocationListener {
     }
 
     /**
-     * Checks if there is a lunch associated with the given restaurant.
-     * @param lunches The list of lunches to check.
-     * @param restaurant The restaurant to check.
-     * @return True if there is a lunch associated with the restaurant, otherwise false.
+     * Affiche les restaurants avec des marqueurs sur la carte.
+     * @param restaurants La liste des restaurants.
+     * @param lunches La liste des lunchs pour vérifier les associations avec les restaurants.
      */
-    private boolean hasLunch(List<Lunch> lunches, Restaurant restaurant) {
-        if (lunches == null) return false;
-
-        for (Lunch lunch : lunches) {
-            if (lunch.getRestaurantId() != null && lunch.getRestaurantId().equals(restaurant.getRestaurantId())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private void displayRestaurants(List<Restaurant> restaurants, @Nullable List<Lunch> lunches) {
         if (restaurants == null) return;
 
@@ -250,21 +245,51 @@ public class MapViewFragment extends Fragment implements LocationListener {
 
         // Ajouter les nouveaux marqueurs
         for (Restaurant restaurant : restaurants) {
-            boolean hasLunch = lunches != null && hasLunch(lunches, restaurant);  // Vérifier si le restaurant est associé à un lunch
-            setupRestaurantMarker(restaurant, hasLunch);  // Utiliser la méthode utilitaire
+            boolean hasLunch = lunches != null && hasLunch(lunches, restaurant);
+            setupRestaurantMarker(restaurant, hasLunch);
         }
 
         mapView.invalidate();  // Actualiser la carte
     }
 
-    // Appel à la méthode dans le ViewModel
+    private boolean hasLunch(List<Lunch> lunches, Restaurant restaurant) {
+        if (lunches == null) return false;
+
+        for (Lunch lunch : lunches) {
+            if (lunch.getRestaurantId() != null && lunch.getRestaurantId().equals(restaurant.getRestaurantId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void setupRestaurantMarker(Restaurant restaurant, boolean hasLunch) {
+        Marker restaurantMarker = new Marker(mapView);
+        restaurantMarker.setPosition(restaurant.getLocation());
+        restaurantMarker.setTitle(restaurant.getName());
+
+        Drawable markerIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker);
+        if (markerIcon != null) {
+            int color = hasLunch ? android.graphics.Color.GREEN : android.graphics.Color.RED;
+            markerIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+            restaurantMarker.setIcon(markerIcon);
+        }
+
+        restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
+            GeoPoint location = restaurant.getLocation();
+            String restaurantName = restaurant.getName();
+            fetchYelpDetails(restaurant.getRestaurantId(), location, restaurantName);
+            return true;
+        });
+
+        mapView.getOverlays().add(restaurantMarker);
+    }
+
     private void fetchYelpDetails(String restaurantId, GeoPoint location, String restaurantName) {
         mapViewModel.fetchRestaurantDetails(restaurantId, location, restaurantName);
     }
 
-    // Méthode pour ouvrir la page de détails du restaurant
     private void openRestaurantDetailFragment(Restaurant restaurant) {
-        // Préparer le bundle avec les infos du restaurant
         Bundle bundle = new Bundle();
         bundle.putString("restaurantId", restaurant.getRestaurantId());
         bundle.putString("restaurantName", restaurant.getName());
@@ -274,40 +299,13 @@ public class MapViewFragment extends Fragment implements LocationListener {
         bundle.putDouble("latitude", restaurant.getLocation().getLatitude());
         bundle.putDouble("longitude", restaurant.getLocation().getLongitude());
 
-        // Créer le fragment de détail et lui passer le bundle
         RestaurantDetailFragment fragment = new RestaurantDetailFragment();
         fragment.setArguments(bundle);
 
-        // Remplacer le fragment actuel par le fragment de détails
         requireActivity().getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit();
-    }
-
-    private void setupRestaurantMarker(Restaurant restaurant, boolean hasLunch) {
-        Marker restaurantMarker = new Marker(mapView);
-        restaurantMarker.setPosition(restaurant.getLocation());
-        restaurantMarker.setTitle(restaurant.getName());
-
-        // Définir l'icône du marqueur en fonction de si le restaurant est associé à un lunch
-        Drawable markerIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker);
-
-        if (markerIcon != null) {
-            int color = hasLunch ? android.graphics.Color.GREEN : android.graphics.Color.RED;
-            markerIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-            restaurantMarker.setIcon(markerIcon);
-        }
-
-        // Rendre le marqueur cliquable
-        restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
-            GeoPoint location = restaurant.getLocation();
-            String restaurantName = restaurant.getName();
-            fetchYelpDetails(restaurant.getRestaurantId(), location, restaurantName); // Détails du restaurant via Yelp
-            return true;
-        });
-
-        mapView.getOverlays().add(restaurantMarker);
     }
 
     @Override
