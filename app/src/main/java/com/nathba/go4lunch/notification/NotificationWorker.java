@@ -117,7 +117,7 @@ public class NotificationWorker extends Worker {
     private void sendNotification(String restaurantName, String restaurantAddress, List<String> colleagueNames) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                Log.e(TAG, "Permission POST_NOTIFICATIONS non accordée, notification non envoyée.");
+                Log.e(TAG, getApplicationContext().getString(R.string.permission_post_notifications_denied));
                 return;
             }
         }
@@ -128,16 +128,16 @@ public class NotificationWorker extends Worker {
         // Utilise BigTextStyle pour afficher plus de contenu
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "LunchChannel")
                 .setSmallIcon(R.drawable.ic_lunch)
-                .setContentTitle("Lunch Reminder")
-                .setContentText("Today’s Lunch: " + restaurantName)
+                .setContentTitle(getApplicationContext().getString(R.string.lunch_reminder_title))
+                .setContentText(getApplicationContext().getString(R.string.lunch_notification_content, restaurantName))
                 .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText("Today’s Lunch: " + restaurantName + " at " + restaurantAddress + " with " + colleagueNamesString))
+                        .bigText(getApplicationContext().getString(R.string.lunch_notification_big_text, restaurantName, restaurantAddress, colleagueNamesString)))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
         notificationManager.notify(1, builder.build());
-        Log.d(TAG, "Notification envoyée pour le restaurant : " + restaurantName);
+        Log.d(TAG, getApplicationContext().getString(R.string.notification_sent_log, restaurantName));
     }
 
     /**
