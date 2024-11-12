@@ -55,7 +55,7 @@ public class LunchViewModelTest {
         // Mocked data for lunches
         MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
         List<Lunch> lunches = new ArrayList<>();
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant1", new Date());
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date());
         lunches.add(lunch);
         lunchesLiveData.setValue(lunches);
 
@@ -95,7 +95,7 @@ public class LunchViewModelTest {
 
     @Test
     public void testAddLunch() {
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", new Date());
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date());
 
         // Perform action
         lunchViewModel.addLunch(lunch);

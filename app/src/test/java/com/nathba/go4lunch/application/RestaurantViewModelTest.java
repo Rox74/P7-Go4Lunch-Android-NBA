@@ -47,7 +47,7 @@ public class RestaurantViewModelTest {
         String restaurantId = "123";
         MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
         List<Lunch> lunches = new ArrayList<>();
-        lunches.add(new Lunch("1", "workmate1", restaurantId, new java.util.Date()));
+        lunches.add(new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date()));
         lunchesLiveData.setValue(lunches);
 
         // Mock the lunchRepository behavior
@@ -66,7 +66,7 @@ public class RestaurantViewModelTest {
 
     @Test
     public void testAddLunch() {
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", new java.util.Date());
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date());
 
         // No need to mock since it's a void method
         restaurantViewModel.addLunch(lunch);
