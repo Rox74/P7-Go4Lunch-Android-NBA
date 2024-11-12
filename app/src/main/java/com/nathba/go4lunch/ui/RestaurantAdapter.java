@@ -84,7 +84,9 @@ public class RestaurantAdapter extends ListAdapter<Restaurant, RestaurantAdapter
                     .into(photoImageView);
 
             if (restaurantViewModel != null) {
-                restaurantViewModel.getLunchCountForRestaurant(restaurant.getRestaurantId()).observe((LifecycleOwner) itemView.getContext(), count -> {
+                // Utiliser getLunchesForRestaurantToday pour récupérer les lunchs et afficher le nombre
+                restaurantViewModel.getLunchesForRestaurantToday(restaurant.getRestaurantId()).observe((LifecycleOwner) itemView.getContext(), lunches -> {
+                    int count = lunches != null ? lunches.size() : 0;
                     lunchCountTextView.setText(itemView.getContext().getString(R.string.lunch_count, count));
                 });
             }

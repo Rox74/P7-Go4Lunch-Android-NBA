@@ -49,11 +49,6 @@ public class RestaurantViewModel extends ViewModel {
         restaurantRepository.addRestaurantToFirestore(restaurant);
     }
 
-    // Récupérer le nombre de lunchs pour un restaurant spécifique
-    public LiveData<Integer> getLunchCountForRestaurant(String restaurantId) {
-        return lunchRepository.getLunchCountForRestaurant(restaurantId);
-    }
-
     // Récupérer la liste des restaurants déjà détaillés
     public LiveData<List<Restaurant>> getDetailedRestaurants() {
         // Retourne les restaurants détaillés déjà chargés dans le repository

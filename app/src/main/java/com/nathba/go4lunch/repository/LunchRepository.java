@@ -76,31 +76,22 @@ public class LunchRepository {
         return lunchesLiveData;
     }
 
-    // Récupérer le nombre de lunchs pour un restaurant spécifique
-    public LiveData<Integer> getLunchCountForRestaurant(String restaurantId) {
-        MutableLiveData<Integer> lunchCountLiveData = new MutableLiveData<>();
-
-        lunchesCollection
-                .whereEqualTo("restaurantId", restaurantId)
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        lunchCountLiveData.setValue(task.getResult().size()); // Nombre de lunchs
-                    } else {
-                        lunchCountLiveData.setValue(0); // Pas de lunch trouvé
-                    }
-                });
-
-        return lunchCountLiveData;
-    }
-
-    // Obtenir la date d'aujourd'hui sans l'heure
+    // Méthode mise à jour pour obtenir la date cible en fonction de l'heure
     private Date getToday() {
         Calendar calendar = Calendar.getInstance();
+
+        // Vérifier l'heure actuelle
+        if (calendar.get(Calendar.HOUR_OF_DAY) >= 12) {
+            // Si après 12h, obtenir la date de demain
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // Réinitialiser l'heure pour obtenir uniquement la date sans l'heure
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
+
         return calendar.getTime();
     }
 

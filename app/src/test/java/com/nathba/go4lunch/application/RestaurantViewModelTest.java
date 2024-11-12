@@ -110,23 +110,4 @@ public class RestaurantViewModelTest {
         // Verify the interaction with the repository
         verify(restaurantRepository).addRestaurantToFirestore(restaurant);
     }
-
-    @Test
-    public void testGetLunchCountForRestaurant() {
-        String restaurantId = "restaurant123";
-        MutableLiveData<Integer> lunchCountLiveData = new MutableLiveData<>();
-        lunchCountLiveData.setValue(5);
-
-        // Mock the repository behavior
-        when(lunchRepository.getLunchCountForRestaurant(restaurantId)).thenReturn(lunchCountLiveData);
-
-        // Call the method in the ViewModel
-        LiveData<Integer> result = restaurantViewModel.getLunchCountForRestaurant(restaurantId);
-
-        assertNotNull(result);
-        assertEquals(5, result.getValue().intValue());
-
-        // Verify the interaction with the repository
-        verify(lunchRepository).getLunchCountForRestaurant(restaurantId);
-    }
 }
