@@ -32,14 +32,18 @@ public class Restaurant {
 
     private String openingHours;  // Horaires d'ouverture
 
+    // Indicateur pour vérifier si les détails sont chargés
+    private boolean detailsFetched;
+
     /**
      * Default constructor for Restaurant.
      * Initializes a new instance with default values.
      */
     public Restaurant() {}
 
-    // Constructor avec horaires d'ouverture
-    public Restaurant(String restaurantId, String name, String address, String photoUrl, double rating, GeoPoint location, String phoneNumber, String yelpUrl, String openingHours) {
+    // Constructor
+    public Restaurant(String restaurantId, String name, String address, String photoUrl, double rating,
+                      GeoPoint location, String phoneNumber, String yelpUrl, String openingHours, boolean detailsFetched) {
         this.restaurantId = restaurantId;
         this.name = name;
         this.address = address;
@@ -49,6 +53,7 @@ public class Restaurant {
         this.phoneNumber = phoneNumber;
         this.yelpUrl = yelpUrl;
         this.openingHours = openingHours;
+        this.detailsFetched = false;
     }
 
 
@@ -89,6 +94,14 @@ public class Restaurant {
     public String getOpeningHours() { return openingHours; }
 
     public void setOpeningHours(String openingHours) { this.openingHours = openingHours; }
+
+    public boolean isDetailsFetched() {
+        return detailsFetched;
+    }
+
+    public void setDetailsFetched(boolean detailsFetched) {
+        this.detailsFetched = detailsFetched;
+    }
 
 
     // Méthodes equals et hashCode

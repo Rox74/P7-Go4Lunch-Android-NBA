@@ -55,7 +55,7 @@ public class MapViewModel extends ViewModel {
             public void onError(Throwable t) {
                 Log.e(TAG, "Failed to retrieve restaurant details: " + t.getMessage());
                 // Créer une instance de Restaurant avec des valeurs par défaut
-                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "");
+                Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", false);
                 selectedRestaurant.setValue(basicRestaurant); // Utiliser des détails de base en cas d'erreur
             }
         });

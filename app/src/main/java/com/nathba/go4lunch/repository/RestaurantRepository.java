@@ -42,6 +42,9 @@ public class RestaurantRepository {
     private final FirebaseFirestore firestore;
     private static final String TAG = "RestaurantRepository";
 
+    // Map pour suivre l'état de récupération
+    private final Map<String, Boolean> detailsFetchedMap = new HashMap<>();
+
     public RestaurantRepository() {
         overpassApi = new OverpassApi();
         yelpApi = new YelpApi();
@@ -98,7 +101,7 @@ public class RestaurantRepository {
 
         // Si pas trouvé dans le cache, fetch depuis Yelp
         Log.d(TAG, "Restaurant not found in cache, fetching details from Yelp API");
-        Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "");
+        Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", false);
         fetchYelpDetails(basicRestaurant, location, callback);
     }
 
@@ -148,7 +151,8 @@ public class RestaurantRepository {
                     new GeoPoint(element.lat, element.lon),   // location
                     "",                                       // phoneNumber
                     "",                                       // yelpUrl
-                    ""                                        // openingHours
+                    "",                                       // openingHours
+                    false                                     // detailsFetched
             );
             restaurants.add(restaurant);
         }
@@ -170,43 +174,62 @@ public class RestaurantRepository {
     public LiveData<List<Restaurant>> fetchRestaurantsBulk(List<Restaurant> restaurants) {
         Log.d(TAG, "Starting bulk fetch for Yelp details with " + restaurants.size() + " restaurants");
 
-        List<Call<YelpBusinessResponse>> calls = yelpApi.getBulkRestaurantDetails(restaurants);
-        List<Restaurant> updatedRestaurants = new ArrayList<>(restaurants);
-        AtomicInteger pendingCalls = new AtomicInteger(calls.size());
+        AtomicInteger pendingCalls = new AtomicInteger(0);
 
-        for (int i = 0; i < calls.size(); i++) {
-            final int index = i;
-            calls.get(i).enqueue(new Callback<YelpBusinessResponse>() {
-                @Override
-                public void onResponse(Call<YelpBusinessResponse> call, Response<YelpBusinessResponse> response) {
-                    if (response.isSuccessful() && response.body() != null && !response.body().businesses.isEmpty()) {
-                        YelpBusinessResponse.YelpBusiness yelpData = response.body().businesses.get(0);
-                        Restaurant restaurant = updatedRestaurants.get(index);
-                        restaurant.setAddress(yelpData.location.address);
-                        restaurant.setPhotoUrl(yelpData.imageUrl);
-                        restaurant.setRating(yelpData.rating);
-                        restaurant.setPhoneNumber(yelpData.phone);
-                        restaurant.setYelpUrl(yelpData.url);
-                        Log.d(TAG, "Yelp details fetched for restaurant: " + restaurant.getName());
-                    } else {
-                        Log.e(TAG, "Failed to fetch Yelp data for restaurant at index " + index);
-                    }
-                    if (pendingCalls.decrementAndGet() == 0) {
-                        cachedRestaurants = updatedRestaurants;
-                        Log.d(TAG, "Bulk fetch completed, updating LiveData");
-                        restaurantsLiveData.postValue(updatedRestaurants);
-                    }
-                }
+        for (Restaurant restaurant : restaurants) {
+            String restaurantId = restaurant.getRestaurantId();
+            boolean isFetched = detailsFetchedMap.getOrDefault(restaurantId, false);
+            Log.d(TAG, "Restaurant " + restaurantId + " detailsFetched: " + isFetched);
 
-                @Override
-                public void onFailure(Call<YelpBusinessResponse> call, Throwable t) {
-                    Log.e(TAG, "Yelp API call failed: " + t.getMessage() + " for restaurant at index " + index);
-                    if (pendingCalls.decrementAndGet() == 0) {
-                        Log.d(TAG, "Bulk fetch completed with errors, updating LiveData");
-                        restaurantsLiveData.postValue(updatedRestaurants);
+            if (!isFetched) {
+                // Met à jour le Map pour éviter les appels multiples
+                detailsFetchedMap.put(restaurantId, true);
+
+                Call<YelpBusinessResponse> call = yelpApi.getRestaurantDetails(
+                        restaurant.getName(),
+                        restaurant.getLocation().getLatitude() + "," + restaurant.getLocation().getLongitude()
+                );
+
+                pendingCalls.incrementAndGet();
+
+                call.enqueue(new Callback<YelpBusinessResponse>() {
+                    @Override
+                    public void onResponse(Call<YelpBusinessResponse> call, Response<YelpBusinessResponse> response) {
+                        if (response.isSuccessful() && response.body() != null && !response.body().businesses.isEmpty()) {
+                            YelpBusinessResponse.YelpBusiness yelpData = response.body().businesses.get(0);
+                            restaurant.setAddress(yelpData.location.address);
+                            restaurant.setPhotoUrl(yelpData.imageUrl);
+                            restaurant.setRating(yelpData.rating);
+                            restaurant.setPhoneNumber(yelpData.phone);
+                            restaurant.setYelpUrl(yelpData.url);
+
+                            Log.d(TAG, "Yelp details fetched for restaurant: " + restaurant.getName());
+                        } else {
+                            Log.e(TAG, "Failed to load Yelp details for restaurant: " + restaurant.getName());
+                        }
+
+                        if (pendingCalls.decrementAndGet() == 0) {
+                            cachedRestaurants = new ArrayList<>(restaurants);
+                            restaurantsLiveData.postValue(cachedRestaurants);
+                        }
                     }
-                }
-            });
+
+                    @Override
+                    public void onFailure(Call<YelpBusinessResponse> call, Throwable t) {
+                        Log.e(TAG, "Yelp API call failed: " + t.getMessage() + " for restaurant: " + restaurant.getName());
+
+                        if (pendingCalls.decrementAndGet() == 0) {
+                            cachedRestaurants = new ArrayList<>(restaurants);
+                            restaurantsLiveData.postValue(cachedRestaurants);
+                        }
+                    }
+                });
+            }
+        }
+
+        // Si aucun appel n'a été ajouté, publie immédiatement les restaurants
+        if (pendingCalls.get() == 0) {
+            restaurantsLiveData.postValue(restaurants);
         }
 
         return restaurantsLiveData;

@@ -88,7 +88,7 @@ public class MapViewModelTest {
     @Test
     public void getSelectedRestaurant_shouldReturnSelectedRestaurant() {
         // Simule la sélection d'un restaurant
-        Restaurant restaurant = new Restaurant("1", "Le Jules Verne", "Paris", "", 4.5, new GeoPoint(48.858844, 2.294351), "", "", "", new ArrayList<>());
+        Restaurant restaurant = new Restaurant("1", "Le Jules Verne", "Paris", "", 4.5, new GeoPoint(48.858844, 2.294351), "", "", "", false);
         mapViewModel.fetchRestaurantDetails(restaurant.getRestaurantId(), restaurant.getLocation(), restaurant.getName());
 
         // Vérifie que le restaurant sélectionné est bien retourné

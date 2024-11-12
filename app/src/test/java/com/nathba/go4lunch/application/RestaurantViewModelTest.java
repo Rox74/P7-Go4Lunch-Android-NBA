@@ -83,7 +83,7 @@ public class RestaurantViewModelTest {
         // Prepare mocked data
         MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>();
         List<Restaurant> restaurants = new ArrayList<>();
-        restaurants.add(new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", new ArrayList<>()));
+        restaurants.add(new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", false));
         restaurantsLiveData.setValue(restaurants);
 
         // Mock the repository behavior
@@ -102,7 +102,7 @@ public class RestaurantViewModelTest {
 
     @Test
     public void testAddRestaurant() {
-        Restaurant restaurant = new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", new ArrayList<>());
+        Restaurant restaurant = new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", false);
 
         // Call the method in the ViewModel
         restaurantViewModel.addRestaurant(restaurant);
