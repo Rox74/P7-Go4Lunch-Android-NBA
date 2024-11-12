@@ -20,27 +20,17 @@ import com.nathba.go4lunch.application.RestaurantViewModel;
 import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.R;
 
-public class RestaurantAdapter extends ListAdapter<Restaurant, RestaurantAdapter.RestaurantViewHolder> {
+import java.util.ArrayList;
+import java.util.List;
 
+public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.RestaurantViewHolder> {
+
+    private final List<Restaurant> restaurantList = new ArrayList<>();
     private final RestaurantViewModel restaurantViewModel;
 
     public RestaurantAdapter(RestaurantViewModel restaurantViewModel) {
-        super(DIFF_CALLBACK);
         this.restaurantViewModel = restaurantViewModel;
     }
-
-    private static final DiffUtil.ItemCallback<Restaurant> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<Restaurant>() {
-                @Override
-                public boolean areItemsTheSame(@NonNull Restaurant oldItem, @NonNull Restaurant newItem) {
-                    return oldItem.getRestaurantId().equals(newItem.getRestaurantId());
-                }
-
-                @Override
-                public boolean areContentsTheSame(@NonNull Restaurant oldItem, @NonNull Restaurant newItem) {
-                    return oldItem.equals(newItem);
-                }
-            };
 
     @NonNull
     @Override
@@ -51,8 +41,26 @@ public class RestaurantAdapter extends ListAdapter<Restaurant, RestaurantAdapter
 
     @Override
     public void onBindViewHolder(@NonNull RestaurantViewHolder holder, int position) {
-        Restaurant restaurant = getItem(position);
+        Restaurant restaurant = restaurantList.get(position);
         holder.bind(restaurant);
+    }
+
+    @Override
+    public int getItemCount() {
+        return restaurantList.size();
+    }
+
+    /**
+     * Met à jour la liste des restaurants et rafraîchit l'affichage.
+     *
+     * @param newRestaurants Nouvelle liste de restaurants.
+     */
+    public void submitList(List<Restaurant> newRestaurants) {
+        restaurantList.clear();
+        if (newRestaurants != null) {
+            restaurantList.addAll(newRestaurants);
+        }
+        notifyDataSetChanged(); // Mettre à jour l'affichage
     }
 
     static class RestaurantViewHolder extends RecyclerView.ViewHolder {
@@ -84,14 +92,15 @@ public class RestaurantAdapter extends ListAdapter<Restaurant, RestaurantAdapter
                     .into(photoImageView);
 
             if (restaurantViewModel != null) {
-                // Utiliser getLunchesForRestaurantToday pour récupérer les lunchs et afficher le nombre
-                restaurantViewModel.getLunchesForRestaurantToday(restaurant.getRestaurantId()).observe((LifecycleOwner) itemView.getContext(), lunches -> {
-                    int count = lunches != null ? lunches.size() : 0;
-                    lunchCountTextView.setText(itemView.getContext().getString(R.string.lunch_count, count));
-                });
+                // Observer les lunchs pour afficher leur nombre
+                restaurantViewModel.getLunchesForRestaurantToday(restaurant.getRestaurantId())
+                        .observe((LifecycleOwner) itemView.getContext(), lunches -> {
+                            int count = lunches != null ? lunches.size() : 0;
+                            lunchCountTextView.setText(itemView.getContext().getString(R.string.lunch_count, count));
+                        });
             }
 
-            // Set OnClickListener to open the restaurant detail fragment
+            // Définir un OnClickListener pour ouvrir les détails du restaurant
             itemView.setOnClickListener(v -> {
                 Bundle bundle = new Bundle();
                 bundle.putString("restaurantId", restaurant.getRestaurantId());

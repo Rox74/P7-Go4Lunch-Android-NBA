@@ -7,9 +7,11 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.SearchView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -274,5 +276,44 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+
+        // Utilise androidx.appcompat.widget.SearchView
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        androidx.appcompat.widget.SearchView searchView = (androidx.appcompat.widget.SearchView) searchItem.getActionView();
+
+        // Configurer le SearchView
+        searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                handleSearchQuery(query); // Gérer la recherche lorsqu'elle est soumise
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                handleSearchQuery(newText); // Gérer la recherche en temps réel
+                return true;
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * Transmet la recherche au fragment visible.
+     *
+     * @param query Texte de la recherche.
+     */
+    private void handleSearchQuery(String query) {
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+
+        if (currentFragment instanceof Searchable) {
+            ((Searchable) currentFragment).onSearch(query); // Appelle l'interface implémentée par les fragments
+        }
     }
 }

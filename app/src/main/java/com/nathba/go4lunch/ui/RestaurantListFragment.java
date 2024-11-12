@@ -16,12 +16,19 @@ import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.RestaurantViewModel;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
+import com.nathba.go4lunch.models.Restaurant;
 
-public class RestaurantListFragment extends Fragment {
+import java.util.ArrayList;
+import java.util.List;
+
+public class RestaurantListFragment extends Fragment implements Searchable {
 
     private RestaurantViewModel restaurantViewModel;
     private RecyclerView recyclerView;
     private RestaurantAdapter adapter;
+
+    private List<Restaurant> fullRestaurantList = new ArrayList<>();
+    private List<Restaurant> filteredRestaurantList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -30,28 +37,47 @@ public class RestaurantListFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_restaurant_list, container, false);
         recyclerView = view.findViewById(R.id.recyclerView);
 
-        // Obtenir le ViewModel
         ViewModelFactory viewModelFactory = AppInjector.getInstance().getViewModelFactory();
         restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
 
-        // Configurer l'adapter avec le ViewModel
+        // Passer le ViewModel à l'adaptateur
         adapter = new RestaurantAdapter(restaurantViewModel);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Observer les changements dans les restaurants détaillés
         observeDetailedRestaurants();
 
         return view;
     }
 
     private void observeDetailedRestaurants() {
-        // Observer directement la liste des restaurants détaillés
         restaurantViewModel.getDetailedRestaurants().observe(getViewLifecycleOwner(), detailedRestaurants -> {
-            if (detailedRestaurants != null && !detailedRestaurants.isEmpty()) {
-                // Mettre à jour l'adaptateur avec les restaurants détaillés
-                adapter.submitList(detailedRestaurants);
+            if (detailedRestaurants != null) {
+                fullRestaurantList.clear();
+                fullRestaurantList.addAll(detailedRestaurants);
+
+                filteredRestaurantList.clear();
+                filteredRestaurantList.addAll(detailedRestaurants);
+
+                adapter.submitList(filteredRestaurantList); // Mettre à jour l'adaptateur
             }
         });
+    }
+
+    @Override
+    public void onSearch(String query) {
+        filteredRestaurantList.clear();
+
+        if (query == null || query.isEmpty()) {
+            filteredRestaurantList.addAll(fullRestaurantList);
+        } else {
+            for (Restaurant restaurant : fullRestaurantList) {
+                if (restaurant.getName().toLowerCase().contains(query.toLowerCase())) {
+                    filteredRestaurantList.add(restaurant);
+                }
+            }
+        }
+
+        adapter.submitList(filteredRestaurantList); // Mettre à jour l'affichage
     }
 }

@@ -33,4 +33,6 @@
     <string name="lunch_notification_big_text">Today’s Lunch: %1$s at %2$s with %3$s</string>
     <string name="notification_sent_log">Notification sent for the restaurant: %1$s</string>
     <string name="lunch_count">"Lunch count: %d"</string>
+    <string name="search">Search</string>
+    <string name="search_hint">Search restaurants</string>
 </resources>
