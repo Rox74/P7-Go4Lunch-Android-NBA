@@ -298,6 +298,8 @@ public class MapViewFragment extends Fragment implements LocationListener {
         bundle.putDouble("restaurantRating", restaurant.getRating());
         bundle.putDouble("latitude", restaurant.getLocation().getLatitude());
         bundle.putDouble("longitude", restaurant.getLocation().getLongitude());
+        bundle.putString("restaurantPhoneNumber", restaurant.getPhoneNumber());
+        bundle.putString("restaurantWebsite", restaurant.getYelpUrl());
 
         RestaurantDetailFragment fragment = new RestaurantDetailFragment();
         fragment.setArguments(bundle);
