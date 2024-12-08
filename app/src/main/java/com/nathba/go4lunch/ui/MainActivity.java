@@ -132,8 +132,10 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
+        // Activez le bouton de navigation dans la barre d'outils
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeButtonEnabled(true);
         }
     }
 
@@ -276,6 +278,10 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
+        if (toggle.onOptionsItemSelected(item)) { // Relie le clic au bouton de menu
+            return true;
+        }
+
         if (currentFragment instanceof Searchable) {
             if (item.getItemId() == R.id.sort_by_distance) {
                 ((Searchable) currentFragment).onSort("distance");
@@ -293,6 +299,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        if (toggle != null) {
+            toggle.syncState(); // Synchronise après la création
+        }
     }
 
     @Override
