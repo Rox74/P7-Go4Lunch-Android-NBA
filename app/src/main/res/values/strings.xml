@@ -38,6 +38,9 @@
     <string name="sort">Sort</string>
     <string name="sort_by_proximity">Sort by proximity</string>
     <string name="sort_by_rating">Sort by rating</string>
-    <string name="sort_by_name_asc">Sort by name asc</string>
-    <string name="sort_by_name_desc">Sort by name desc</string>
+    <string name="sort_by_name_asc">Sort by name (A-Z)</string>
+    <string name="sort_by_name_desc">Sort by name (Z-A)</string>
+    <string name="no_restaurant_selected">%1$s has not selected a restaurant</string>
+    <string name="is_eating_at">%1$s is eating at %2$s</string>
+
 </resources>

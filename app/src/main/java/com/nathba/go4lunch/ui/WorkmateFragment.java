@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.nathba.go4lunch.R;
+import com.nathba.go4lunch.application.LunchViewModel;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.application.WorkmateViewModel;
 import com.nathba.go4lunch.di.AppInjector;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 public class WorkmateFragment extends Fragment {
 
     private WorkmateViewModel workmateViewModel;
+    private LunchViewModel lunchViewModel;
     private ViewModelFactory viewModelFactory;
     private RecyclerView recyclerView;
     private WorkmateAdapter workmateAdapter;
@@ -41,46 +43,36 @@ public class WorkmateFragment extends Fragment {
         // Obtain ViewModelFactory from AppInjector
         viewModelFactory = AppInjector.getInstance().getViewModelFactory();
 
-        // Initialize WorkmateViewModel using ViewModelProvider with ViewModelFactory
+        // Initialize ViewModels
         workmateViewModel = new ViewModelProvider(this, viewModelFactory).get(WorkmateViewModel.class);
+        lunchViewModel = new ViewModelProvider(this, viewModelFactory).get(LunchViewModel.class);
 
         recyclerView = view.findViewById(R.id.recycler_view_workmates);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        workmateAdapter = new WorkmateAdapter(new ArrayList<>());
+
+        // Initialize adapter with empty lists
+        workmateAdapter = new WorkmateAdapter(new ArrayList<>(), new ArrayList<>());
         recyclerView.setAdapter(workmateAdapter);
-
-        // Observe changes in the list of workmates
-        workmateViewModel.getWorkmates().observe(getViewLifecycleOwner(), workmates -> {
-            if (workmates != null) {
-                workmateAdapter.updateWorkmates(workmates);
-            } else {
-                // Handle the case where workmates list is null
-                Toast.makeText(getContext(), "No workmates found", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // Add a test workmate
-        addTestWorkmate();
 
         return view;
     }
 
-    /**
-     * Adds a test workmate based on the current logged-in user.
-     * This is typically used for development and testing.
-     */
-    private void addTestWorkmate() {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() != null) {
-            String userId = auth.getCurrentUser().getUid();
-            String userName = auth.getCurrentUser().getDisplayName();
-            String userEmail = auth.getCurrentUser().getEmail();
-            String photoUrl = auth.getCurrentUser().getPhotoUrl() != null ? auth.getCurrentUser().getPhotoUrl().toString() : null;
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-            Workmate workmate = new Workmate(userId, userName, userEmail, photoUrl);
-            workmateViewModel.addWorkmate(workmate);
-        } else {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-        }
+        // Observe lunches
+        lunchViewModel.getLunches().observe(getViewLifecycleOwner(), lunches -> {
+            if (lunches != null) {
+                workmateAdapter.updateLunches(lunches);
+            }
+        });
+
+        // Observe workmates
+        workmateViewModel.getWorkmates().observe(getViewLifecycleOwner(), workmates -> {
+            if (workmates != null) {
+                workmateAdapter.updateWorkmates(workmates);
+            }
+        });
     }
 }
