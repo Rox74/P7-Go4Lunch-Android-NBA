@@ -266,6 +266,9 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, selectedFragment, fragmentTag)
                     .commit();
+
+            // Forcer la mise à jour du menu
+            invalidateOptionsMenu();
         }
     }
 
@@ -296,24 +299,52 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
 
-        // Utilise androidx.appcompat.widget.SearchView
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        androidx.appcompat.widget.SearchView searchView = (androidx.appcompat.widget.SearchView) searchItem.getActionView();
+        // Récupérer le fragment actif
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-        // Configurer le SearchView
-        searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                handleSearchQuery(query); // Gérer la recherche lorsqu'elle est soumise
-                return true;
-            }
+        // Contrôler les items du menu
+        MenuItem searchItem = menu.findItem(R.id.action_search); // Loupe
+        MenuItem sortItem = menu.findItem(R.id.action_sort);     // Bouton de tri
 
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                handleSearchQuery(newText); // Gérer la recherche en temps réel
-                return true;
-            }
-        });
+        // Vérifiez si le fragment actif est valide
+        if (currentFragment == null) {
+            Log.e("MenuError", "Fragment actif non trouvé");
+            searchItem.setVisible(false);
+            sortItem.setVisible(false);
+            return true;
+        }
+
+        // Contrôler la visibilité des items en fonction du fragment actif
+        if (currentFragment instanceof RestaurantListFragment) {
+            searchItem.setVisible(true);
+            sortItem.setVisible(true);
+        } else if (currentFragment instanceof MapViewFragment) {
+            searchItem.setVisible(true);
+            sortItem.setVisible(false);
+        } else {
+            searchItem.setVisible(false);
+            sortItem.setVisible(false);
+        }
+
+        // Configurer le SearchView pour les fragments implémentant l'interface Searchable
+        if (currentFragment instanceof Searchable) {
+            androidx.appcompat.widget.SearchView searchView = (androidx.appcompat.widget.SearchView) searchItem.getActionView();
+
+            // Configurer les actions de recherche
+            searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    ((Searchable) currentFragment).onSearch(query);
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    ((Searchable) currentFragment).onSearch(newText);
+                    return true;
+                }
+            });
+        }
 
         return true;
     }
