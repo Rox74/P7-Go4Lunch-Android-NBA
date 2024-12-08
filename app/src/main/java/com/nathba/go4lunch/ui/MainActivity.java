@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -25,8 +26,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.nathba.go4lunch.R;
+import com.nathba.go4lunch.application.LunchViewModel;
 import com.nathba.go4lunch.application.MainViewModel;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
@@ -156,9 +159,37 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_your_lunch) {
-                // Handle "Your Lunch" option
+                String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+                Log.d("MainActivity", "User clicked on 'Your Lunch', fetching lunch for userId: " + userId);
+
+                LunchViewModel lunchViewModel = new ViewModelProvider(this, viewModelFactory).get(LunchViewModel.class);
+                lunchViewModel.getUserLunchForToday(userId).observe(this, lunch -> {
+                    if (lunch != null) {
+                        Log.d("MainActivity", "Lunch data found: " +
+                                "restaurantId=" + lunch.getRestaurantId() +
+                                ", restaurantName=" + lunch.getRestaurantName() +
+                                ", restaurantAddress=" + lunch.getRestaurantAddress());
+
+                        Bundle bundle = new Bundle();
+                        bundle.putString("restaurantId", lunch.getRestaurantId());
+                        bundle.putString("restaurantName", lunch.getRestaurantName());
+                        bundle.putString("restaurantAddress", lunch.getRestaurantAddress());
+
+                        RestaurantDetailFragment fragment = new RestaurantDetailFragment();
+                        fragment.setArguments(bundle);
+
+                        getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container, fragment)
+                                .addToBackStack(null)
+                                .commit();
+                    } else {
+                        Log.w("MainActivity", "No lunch data found for userId: " + userId);
+                        Toast.makeText(this, "No lunch selected for today", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else if (itemId == R.id.nav_settings) {
-                // Handle "Settings" option
+                // Gestion des paramètres
             } else if (itemId == R.id.nav_logout) {
                 mainViewModel.signOut();
             }

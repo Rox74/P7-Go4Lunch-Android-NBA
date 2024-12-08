@@ -64,4 +64,8 @@ public class LunchViewModel extends ViewModel {
     public Task<Void> deleteExpiredLunches() {
         return lunchRepository.deleteExpiredLunches();
     }
+
+    public LiveData<Lunch> getUserLunchForToday(String userId) {
+        return lunchRepository.getUserLunchForToday(userId);
+    }
 }

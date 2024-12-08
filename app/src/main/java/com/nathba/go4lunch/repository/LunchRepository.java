@@ -1,5 +1,7 @@
 package com.nathba.go4lunch.repository;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
@@ -140,5 +142,34 @@ public class LunchRepository {
                     }
                     return Tasks.forResult(null); // Aucun lunch à supprimer
                 });
+    }
+
+    public LiveData<Lunch> getUserLunchForToday(String userId) {
+        MutableLiveData<Lunch> lunchLiveData = new MutableLiveData<>();
+        Date today = getToday();
+
+        Log.d("LunchRepository", "Fetching lunch for userId: " + userId + " for today: " + today);
+
+        lunchesCollection
+                .whereEqualTo("workmateId", userId)
+                .whereGreaterThanOrEqualTo("date", today)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            Lunch lunch = task.getResult().getDocuments().get(0).toObject(Lunch.class);
+                            Log.d("LunchRepository", "Lunch found: " + lunch.getRestaurantName());
+                            lunchLiveData.setValue(lunch);
+                        } else {
+                            Log.w("LunchRepository", "No lunch found for userId: " + userId);
+                            lunchLiveData.setValue(null);
+                        }
+                    } else {
+                        Log.e("LunchRepository", "Error fetching lunch for userId: " + userId, task.getException());
+                        lunchLiveData.setValue(null);
+                    }
+                });
+
+        return lunchLiveData;
     }
 }
