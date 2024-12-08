@@ -24,8 +24,6 @@ import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
-import com.nathba.go4lunch.repository.RepositoryCallback;
-import com.nathba.go4lunch.repository.RestaurantRepository;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -42,7 +40,6 @@ import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -104,19 +101,35 @@ public class MapViewFragment extends Fragment implements LocationListener {
         // Setup the map view
         initializeMap();
 
-        // Request location updates from the system
-        requestLocationUpdates();
-
-        // Setup geolocation button
+        // Bouton de géolocalisation
         Button btnGeolocate = view.findViewById(R.id.btn_geolocate);
-        btnGeolocate.setOnClickListener(v -> {
-            Location location = mapViewModel.getUserLocation().getValue();
-            if (location != null) {
-                fetchAndDisplayRestaurants(location);  // Charger et afficher les restaurants avec détails
-            } else {
-                Toast.makeText(requireContext(), "La position de l'utilisateur est inconnue.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        btnGeolocate.setOnClickListener(v -> geolocationAndUpdateMap());
+
+        // Simuler un clic sur le bouton géolocaliser à l'ouverture
+        geolocationAndUpdateMap();
+    }
+
+    /**
+     * Récupère la position de l'utilisateur, met à jour la carte et charge les restaurants.
+     */
+    private void geolocationAndUpdateMap() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            return;
+        }
+
+        LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
+        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if (lastKnownLocation == null) {
+            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        }
+
+        if (lastKnownLocation != null && isLocationAccurate(lastKnownLocation)) {
+            updateUserLocationOnMap(lastKnownLocation); // Met à jour la carte
+            fetchAndDisplayRestaurants(lastKnownLocation); // Charge les restaurants
+        } else {
+            Toast.makeText(requireContext(), "Impossible de récupérer votre position.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -218,7 +231,7 @@ public class MapViewFragment extends Fragment implements LocationListener {
             userLocationMarker.setPosition(userLocation);
             userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             mapView.getController().setCenter(userLocation);
-            mapView.invalidate();  // Actualiser la carte
+            mapView.invalidate(); // Actualiser la carte
         } else {
             Log.e(TAG, "MapView is null, cannot update user location");
         }
