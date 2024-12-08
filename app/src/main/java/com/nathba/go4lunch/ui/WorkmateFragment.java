@@ -1,5 +1,6 @@
 package com.nathba.go4lunch.ui;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,8 +9,10 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -49,6 +52,14 @@ public class WorkmateFragment extends Fragment {
 
         recyclerView = view.findViewById(R.id.recycler_view_workmates);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // Add DividerItemDecoration for the RecyclerView
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL);
+        Drawable dividerDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.divider_drawable);
+        if (dividerDrawable != null) {
+            dividerItemDecoration.setDrawable(dividerDrawable);
+        }
+        recyclerView.addItemDecoration(dividerItemDecoration);
 
         // Initialize adapter with empty lists
         workmateAdapter = new WorkmateAdapter(new ArrayList<>(), new ArrayList<>());
