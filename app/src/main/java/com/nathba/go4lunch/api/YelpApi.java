@@ -17,7 +17,7 @@ import retrofit2.http.Query;
 public class YelpApi {
 
     private static final String BASE_URL = "https://api.yelp.com/v3/";
-    private static final String API_KEY = "XjySAn2LVboxZI6rZtzB-Ffa-euDxUd0kIHFdu_YQ7s52eT8jZjDuDii6VyD5ZzpdU7v-Ljc-Gnv9Sea_eEHdQkOZJjmCCqEMqrPa-j6neWN10jy3gbL4TSZge0tZ3Yx";  // Remplace par ta clé API Yelp
+    private static final String API_KEY = "wKqW3d7a5QzCtq9MkhDK9AWFeo0nzVu1OrIPlH8cwYiuX4FOmO_Uf9PTu7SJqiTkbWbqujtMZt5T4xaUpzKrjCs22flb8i7rEOwucbX7tBiKovaVV-7GADAdQEdUZ3Yx";
 
     private final YelpService yelpService;
 

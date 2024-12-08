@@ -178,7 +178,7 @@ public class RestaurantRepository {
 
         for (Restaurant restaurant : restaurants) {
             String restaurantId = restaurant.getRestaurantId();
-            boolean isFetched = detailsFetchedMap.getOrDefault(restaurantId, false);
+            boolean isFetched = detailsFetchedMap.containsKey(restaurantId) ? detailsFetchedMap.get(restaurantId) : false;
             Log.d(TAG, "Restaurant " + restaurantId + " detailsFetched: " + isFetched);
 
             if (!isFetched) {

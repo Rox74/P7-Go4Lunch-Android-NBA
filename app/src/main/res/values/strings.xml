@@ -35,4 +35,9 @@
     <string name="lunch_count">"Lunch count: %d"</string>
     <string name="search">Search</string>
     <string name="search_hint">Search restaurants</string>
+    <string name="sort">Sort</string>
+    <string name="sort_by_proximity">Sort by proximity</string>
+    <string name="sort_by_rating">Sort by rating</string>
+    <string name="sort_by_name_asc">Sort by name asc</string>
+    <string name="sort_by_name_desc">Sort by name desc</string>
 </resources>

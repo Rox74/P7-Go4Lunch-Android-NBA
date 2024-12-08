@@ -271,10 +271,24 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        // Handle drawer toggle clicks
-        if (toggle.onOptionsItemSelected(item)) {
-            return true;
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+
+        if (currentFragment instanceof Searchable) {
+            if (item.getItemId() == R.id.sort_by_distance) {
+                ((Searchable) currentFragment).onSort("distance");
+                return true;
+            } else if (item.getItemId() == R.id.sort_by_stars) {
+                ((Searchable) currentFragment).onSort("stars");
+                return true;
+            } else if (item.getItemId() == R.id.sort_a_to_z) {
+                ((Searchable) currentFragment).onSort("a_to_z");
+                return true;
+            } else if (item.getItemId() == R.id.sort_z_to_a) {
+                ((Searchable) currentFragment).onSort("z_to_a");
+                return true;
+            }
         }
+
         return super.onOptionsItemSelected(item);
     }
 

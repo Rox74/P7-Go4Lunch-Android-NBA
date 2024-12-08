@@ -1,5 +1,7 @@
 package com.nathba.go4lunch.models;
 
+import android.location.Location;
+
 import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
@@ -122,4 +124,19 @@ public class Restaurant {
     public int hashCode() {
         return Objects.hash(restaurantId, name, address, photoUrl, rating, location);
     }
+
+    public double calculateDistance(double userLatitude, double userLongitude) {
+        if (location == null) {
+            return Double.MAX_VALUE; // Valeur par défaut si aucune localisation
+        }
+
+        double restaurantLatitude = location.getLatitude();
+        double restaurantLongitude = location.getLongitude();
+
+        float[] results = new float[1];
+        Location.distanceBetween(userLatitude, userLongitude, restaurantLatitude, restaurantLongitude, results);
+
+        return results[0]; // Distance en mètres
+    }
+
 }
