@@ -172,4 +172,26 @@ public class LunchRepository {
 
         return lunchLiveData;
     }
+
+    public LiveData<List<Lunch>> getLunchesToday() {
+        MutableLiveData<List<Lunch>> lunchesTodayLiveData = new MutableLiveData<>();
+
+        lunchesCollection
+                .whereGreaterThanOrEqualTo("date", getToday()) // Utiliser directement getToday pour récupérer les lunchs du jour
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        List<Lunch> lunchesToday = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Lunch lunch = document.toObject(Lunch.class);
+                            lunchesToday.add(lunch);
+                        }
+                        lunchesTodayLiveData.setValue(lunchesToday);
+                    } else {
+                        lunchesTodayLiveData.setValue(new ArrayList<>()); // Retourne une liste vide si aucune donnée
+                    }
+                });
+
+        return lunchesTodayLiveData;
+    }
 }

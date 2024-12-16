@@ -24,13 +24,14 @@ public class MapViewModel extends ViewModel {
     private final MapRepository mapRepository;
     private final LunchRepository lunchRepository;
     private final RestaurantRepository restaurantRepository;
-    private final MutableLiveData<Restaurant> selectedRestaurant = new MutableLiveData<>();
     private final LiveData<List<Restaurant>> restaurants;
-    private final MutableLiveData<Location> userLocation = new MutableLiveData<>();
     private final LiveData<List<Lunch>> lunches;
+    private final MutableLiveData<Restaurant> selectedRestaurant = new MutableLiveData<>();
+    private final MutableLiveData<Location> userLocation = new MutableLiveData<>();
+    private final MutableLiveData<List<Restaurant>> detailedRestaurants = new MutableLiveData<>();
+    private final MutableLiveData<List<Lunch>> lunchesToday = new MutableLiveData<>();
     private static final String TAG = "MapViewModel";
     private boolean detailsFetched = false;
-    private final MutableLiveData<List<Restaurant>> detailedRestaurants = new MutableLiveData<>();
 
     public MapViewModel(MapRepository mapRepository, LunchRepository lunchRepository, RestaurantRepository restaurantRepository) {
         this.mapRepository = mapRepository;
@@ -108,5 +109,13 @@ public class MapViewModel extends ViewModel {
     // Observer pour récupérer la liste des restaurants détaillés
     public LiveData<List<Restaurant>> getDetailedRestaurants() {
         return detailedRestaurants;
+    }
+
+    public LiveData<List<Lunch>> getLunchesToday() {
+        return lunchesToday;
+    }
+
+    public void loadLunchesToday() {
+        lunchRepository.getLunchesToday().observeForever(lunchesToday::setValue);
     }
 }

@@ -79,33 +79,39 @@ public class MapViewFragment extends Fragment implements LocationListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Obtain ViewModelFactory from AppInjector
+        // Initialize ViewModel
         viewModelFactory = AppInjector.getInstance().getViewModelFactory();
-
-        // Initialize MapViewModel using ViewModelFactory
         mapViewModel = new ViewModelProvider(this, viewModelFactory).get(MapViewModel.class);
 
-        // Observer pour les restaurants détaillés
+        // Observer for lunches today
+        mapViewModel.loadLunchesToday();
+        mapViewModel.getLunchesToday().observe(getViewLifecycleOwner(), lunches -> {
+            Log.d("MapViewFragment", "Lunches Today Size: " + (lunches != null ? lunches.size() : 0));
+            List<Restaurant> detailedRestaurants = mapViewModel.getDetailedRestaurants().getValue();
+            displayRestaurants(detailedRestaurants, lunches);
+        });
+
+        // Observer for detailed restaurants
         mapViewModel.getDetailedRestaurants().observe(getViewLifecycleOwner(), restaurants -> {
-            List<Lunch> lunches = mapViewModel.getLunches().getValue();
+            List<Lunch> lunches = mapViewModel.getLunchesToday().getValue();
             displayRestaurants(restaurants, lunches);
         });
 
-        // Observer le restaurant sélectionné pour ouvrir les détails
+        // Observer for selected restaurant
         mapViewModel.getSelectedRestaurant().observe(getViewLifecycleOwner(), restaurant -> {
             if (restaurant != null) {
                 openRestaurantDetailFragment(restaurant);
             }
         });
 
-        // Setup the map view
+        // Setup map
         initializeMap();
 
-        // Bouton de géolocalisation
+        // Geolocation button
         Button btnGeolocate = view.findViewById(R.id.btn_geolocate);
         btnGeolocate.setOnClickListener(v -> geolocationAndUpdateMap());
 
-        // Simuler un clic sur le bouton géolocaliser à l'ouverture
+        // Simulate geolocate button click on startup
         geolocationAndUpdateMap();
     }
 
@@ -237,15 +243,10 @@ public class MapViewFragment extends Fragment implements LocationListener {
         }
     }
 
-    /**
-     * Affiche les restaurants avec des marqueurs sur la carte.
-     * @param restaurants La liste des restaurants.
-     * @param lunches La liste des lunchs pour vérifier les associations avec les restaurants.
-     */
     private void displayRestaurants(List<Restaurant> restaurants, @Nullable List<Lunch> lunches) {
         if (restaurants == null) return;
 
-        // Effacer les anciens marqueurs, sauf celui de la position de l'utilisateur
+        // Clear old markers (except user location)
         List<Overlay> overlays = mapView.getOverlays();
         for (int i = overlays.size() - 1; i >= 0; i--) {
             if (overlays.get(i) instanceof Marker) {
@@ -256,23 +257,26 @@ public class MapViewFragment extends Fragment implements LocationListener {
             }
         }
 
-        // Ajouter les nouveaux marqueurs
+        // Add new markers
         for (Restaurant restaurant : restaurants) {
             boolean hasLunch = lunches != null && hasLunch(lunches, restaurant);
             setupRestaurantMarker(restaurant, hasLunch);
         }
 
-        mapView.invalidate();  // Actualiser la carte
+        mapView.invalidate(); // Refresh map
     }
 
     private boolean hasLunch(List<Lunch> lunches, Restaurant restaurant) {
-        if (lunches == null) return false;
+        if (lunches == null || restaurant == null) return false;
 
         for (Lunch lunch : lunches) {
             if (lunch.getRestaurantId() != null && lunch.getRestaurantId().equals(restaurant.getRestaurantId())) {
+                Log.d("MapViewFragment", "Lunch found for restaurant: " + restaurant.getName());
                 return true;
             }
         }
+
+        Log.d("MapViewFragment", "No lunch for restaurant: " + restaurant.getName());
         return false;
     }
 
@@ -281,11 +285,14 @@ public class MapViewFragment extends Fragment implements LocationListener {
         restaurantMarker.setPosition(restaurant.getLocation());
         restaurantMarker.setTitle(restaurant.getName());
 
-        Drawable markerIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_restaurant_marker);
+        // Utiliser des ressources distinctes pour rouge et vert
+        int markerResource = hasLunch ? R.drawable.ic_restaurant_marker_green : R.drawable.ic_restaurant_marker_red;
+        Drawable markerIcon = ContextCompat.getDrawable(requireContext(), markerResource);
         if (markerIcon != null) {
-            int color = hasLunch ? android.graphics.Color.GREEN : android.graphics.Color.RED;
-            markerIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
             restaurantMarker.setIcon(markerIcon);
+            Log.d("MapViewFragment", "Marker set for " + restaurant.getName() + ": " + (hasLunch ? "GREEN" : "RED"));
+        } else {
+            Log.e("MapViewFragment", "Failed to load marker icon for " + restaurant.getName());
         }
 
         restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
