@@ -1,7 +1,5 @@
 package com.nathba.go4lunch.repository;
 
-import android.util.Log;
-
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
@@ -37,7 +35,6 @@ public class NotificationRepository {
      */
     public LiveData<NotificationData> getNotificationData(String userId) {
         MutableLiveData<NotificationData> notificationData = new MutableLiveData<>();
-        Log.d(TAG, "Fetching notification data for user: " + userId);
 
         firestore.collection("lunches")
                 .whereEqualTo("workmateId", userId)
@@ -47,10 +44,8 @@ public class NotificationRepository {
                     if (task.isSuccessful() && task.getResult() != null && !task.getResult().isEmpty()) {
                         DocumentSnapshot document = task.getResult().getDocuments().get(0);
                         NotificationData data = document.toObject(NotificationData.class);
-                        Log.d(TAG, "Notification data found: " + data);
                         notificationData.setValue(data);
                     } else {
-                        Log.d(TAG, "No notification data found for user: " + userId);
                         notificationData.setValue(null);
                     }
                 });

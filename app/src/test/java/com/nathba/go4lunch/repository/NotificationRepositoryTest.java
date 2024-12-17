@@ -1,11 +1,16 @@
 package com.nathba.go4lunch.repository;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -14,70 +19,172 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.nathba.go4lunch.models.NotificationData;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 
-@RunWith(MockitoJUnitRunner.class)
 public class NotificationRepositoryTest {
 
-    @Mock
-    private FirebaseFirestore firestore;
+    @Rule
+    public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
     @Mock
-    private CollectionReference collectionReference;
+    private FirebaseFirestore mockFirestore;
 
     @Mock
-    private Query query;
+    private CollectionReference mockCollection;
 
     @Mock
-    private Task<QuerySnapshot> task;
+    private Query mockQuery;
+
+    @Mock
+    private Observer<NotificationData> observer;
 
     private NotificationRepository notificationRepository;
+    private AutoCloseable closeable;
 
     @Before
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
-        notificationRepository = new NotificationRepository(firestore);
-        when(firestore.collection("lunches")).thenReturn(collectionReference);
+        closeable = MockitoAnnotations.openMocks(this);
+
+        // Mock Firestore collection
+        when(mockFirestore.collection("lunches")).thenReturn(mockCollection);
+
+        // Initialize repository
+        notificationRepository = new NotificationRepository(mockFirestore);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        closeable.close();
     }
 
     @Test
-    public void getNotificationData_shouldReturnData_whenLunchExists() {
-        // Arrange
-        String userId = "testUser";
-        Date today = new Date();
-        NotificationData mockData = new NotificationData("Test Restaurant", "123 Test St", Arrays.asList("Alice", "Bob"));
+    public void getNotificationData_shouldReturnDataSuccessfully() {
+        // Given
+        String userId = "user123";
+        Date today = getToday();
 
-        DocumentSnapshot documentSnapshot = Mockito.mock(DocumentSnapshot.class);
-        when(documentSnapshot.toObject(NotificationData.class)).thenReturn(mockData);
+        // Mock Task<QuerySnapshot>
+        Task<QuerySnapshot> mockTask = mock(Task.class);
 
-        QuerySnapshot querySnapshot = Mockito.mock(QuerySnapshot.class);
-        when(querySnapshot.getDocuments()).thenReturn(Collections.singletonList(documentSnapshot));
+        // Mock Firestore query
+        when(mockCollection.whereEqualTo("workmateId", userId)).thenReturn(mockQuery);
+        when(mockQuery.whereEqualTo("date", today)).thenReturn(mockQuery);
+        when(mockQuery.get()).thenReturn(mockTask);
 
-        when(collectionReference.whereEqualTo("workmateId", userId)).thenReturn(query);
-        when(query.whereEqualTo("date", today)).thenReturn(query);
-        when(query.get()).thenReturn(task);
-        when(task.isSuccessful()).thenReturn(true);
-        when(task.getResult()).thenReturn(querySnapshot);
+        // Simule un succès avec des données
+        NotificationData mockData = new NotificationData("Restaurant123", "123 Rue de Paris", Arrays.asList("Alice", "Bob"));
+        when(mockTask.isSuccessful()).thenReturn(true);
 
-        // Act
+        QuerySnapshot mockQuerySnapshot = mock(QuerySnapshot.class);
+        DocumentSnapshot mockDocumentSnapshot = mock(DocumentSnapshot.class);
+
+        when(mockTask.getResult()).thenReturn(mockQuerySnapshot);
+        when(mockQuerySnapshot.isEmpty()).thenReturn(false);
+        when(mockQuerySnapshot.getDocuments()).thenReturn(Collections.singletonList(mockDocumentSnapshot));
+        when(mockDocumentSnapshot.toObject(NotificationData.class)).thenReturn(mockData);
+
+        // Simule l'exécution asynchrone du listener
+        doAnswer(invocation -> {
+            OnCompleteListener<QuerySnapshot> listener = invocation.getArgument(0);
+            listener.onComplete(mockTask);
+            return null;
+        }).when(mockTask).addOnCompleteListener(any());
+
+        // Observe LiveData
         LiveData<NotificationData> liveData = notificationRepository.getNotificationData(userId);
+        liveData.observeForever(observer);
 
-        // Assert
-        liveData.observeForever(data -> {
-            assertNotNull(data);
-            assertEquals("Test Restaurant", data.getRestaurantName());
-            assertEquals("123 Test St", data.getRestaurantAddress());
-            assertEquals(2, data.getColleaguesNames().size());
-        });
+        // Then
+        verify(observer).onChanged(mockData);
+    }
+
+    @Test
+    public void getNotificationData_shouldReturnNullWhenNoDataFound() {
+        // Given
+        String userId = "user123";
+        Date today = getToday();
+
+        // Mock Task<QuerySnapshot>
+        Task<QuerySnapshot> mockTask = mock(Task.class);
+
+        // Mock Firestore query
+        when(mockCollection.whereEqualTo("workmateId", userId)).thenReturn(mockQuery);
+        when(mockQuery.whereEqualTo("date", today)).thenReturn(mockQuery);
+        when(mockQuery.get()).thenReturn(mockTask);
+
+        // Simule un succès mais sans données
+        when(mockTask.isSuccessful()).thenReturn(true);
+        QuerySnapshot mockQuerySnapshot = mock(QuerySnapshot.class);
+
+        when(mockTask.getResult()).thenReturn(mockQuerySnapshot);
+        when(mockQuerySnapshot.isEmpty()).thenReturn(true);
+
+        doAnswer(invocation -> {
+            OnCompleteListener<QuerySnapshot> listener = invocation.getArgument(0);
+            listener.onComplete(mockTask);
+            return null;
+        }).when(mockTask).addOnCompleteListener(any());
+
+        // Observe LiveData
+        LiveData<NotificationData> liveData = notificationRepository.getNotificationData(userId);
+        liveData.observeForever(observer);
+
+        // Then
+        verify(observer).onChanged(null);
+    }
+
+    @Test
+    public void getNotificationData_shouldHandleFirestoreError() {
+        // Given
+        String userId = "user123";
+        Date today = getToday();
+
+        // Mock Task<QuerySnapshot>
+        Task<QuerySnapshot> mockTask = mock(Task.class);
+
+        // Mock Firestore query
+        when(mockCollection.whereEqualTo("workmateId", userId)).thenReturn(mockQuery);
+        when(mockQuery.whereEqualTo("date", today)).thenReturn(mockQuery);
+        when(mockQuery.get()).thenReturn(mockTask);
+
+        // Simule une erreur dans Firestore
+        when(mockTask.isSuccessful()).thenReturn(false);
+
+        doAnswer(invocation -> {
+            OnCompleteListener<QuerySnapshot> listener = invocation.getArgument(0);
+            listener.onComplete(mockTask);
+            return null;
+        }).when(mockTask).addOnCompleteListener(any());
+
+        // Observe LiveData
+        LiveData<NotificationData> liveData = notificationRepository.getNotificationData(userId);
+        liveData.observeForever(observer);
+
+        // Then
+        verify(observer).onChanged(null);
+    }
+
+    /**
+     * Réimplémentation locale de getToday()
+     *
+     * @return Date à minuit pour aujourd'hui
+     */
+    private Date getToday() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 }
