@@ -13,21 +13,50 @@ import com.nathba.go4lunch.repository.RestaurantRepository;
 import com.nathba.go4lunch.repository.WorkmateRepository;
 
 /**
- * ViewModelFactory is responsible for creating instances of ViewModels in the application.
- * It holds references to the necessary repositories and uses them to instantiate the ViewModels.
- * This factory is used to ensure the correct dependencies are passed to each ViewModel.
+ * Factory class for creating instances of ViewModels in the application.
+ * <p>
+ * This factory ensures that the correct dependencies (repositories) are passed to each ViewModel.
+ * It implements {@link ViewModelProvider.Factory} to create ViewModels based on their class type.
+ * <p>
+ * This approach centralizes the creation logic, making it easier to inject required dependencies
+ * without manual instantiation in various parts of the code.
  */
 public class ViewModelFactory implements ViewModelProvider.Factory {
 
-    // Repositories required by various ViewModels
+    /** Repository for managing main application data and user state. */
     private final MainRepository mainRepository;
+
+    /** Repository for handling user authentication logic. */
     private final AuthRepository authRepository;
+
+    /** Repository for managing lunch-related data. */
     private final LunchRepository lunchRepository;
+
+    /** Repository for managing restaurant-related data. */
     private final RestaurantRepository restaurantRepository;
+
+    /** Repository for managing workmate-related data. */
     private final WorkmateRepository workmateRepository;
+
+    /** Repository for handling map-related operations and data. */
     private final MapRepository mapRepository;
+
+    /** Repository for managing notification-related data. */
     private final NotificationRepository notificationRepository;
 
+    /**
+     * Constructor for {@link ViewModelFactory}.
+     * <p>
+     * Initializes the factory with the required repositories that will be passed to the ViewModels.
+     *
+     * @param mainRepository        The repository for main application logic.
+     * @param authRepository        The repository for user authentication.
+     * @param lunchRepository       The repository for managing lunch data.
+     * @param restaurantRepository  The repository for restaurant operations.
+     * @param workmateRepository    The repository for workmate-related data.
+     * @param mapRepository         The repository for map-related operations.
+     * @param notificationRepository The repository for managing notification data.
+     */
     public ViewModelFactory(MainRepository mainRepository,
                             AuthRepository authRepository,
                             LunchRepository lunchRepository,
@@ -45,13 +74,15 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
     }
 
     /**
-     * Creates and returns an instance of the requested ViewModel.
-     * It checks the class of the requested ViewModel and initializes it with the appropriate repository.
+     * Creates and returns an instance of the requested ViewModel class.
+     * <p>
+     * This method checks the class of the requested ViewModel and initializes it
+     * with the appropriate repository or dependencies.
      *
      * @param modelClass The class of the ViewModel to be created.
      * @param <T>        The type of ViewModel to be created.
      * @return An instance of the requested ViewModel.
-     * @throws IllegalArgumentException if the ViewModel class is not recognized.
+     * @throws IllegalArgumentException If the ViewModel class is not recognized.
      */
     @SuppressWarnings("unchecked")
     @NonNull

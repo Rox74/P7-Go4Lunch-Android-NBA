@@ -12,45 +12,62 @@ import com.nathba.go4lunch.repository.RestaurantRepository;
 import com.nathba.go4lunch.repository.WorkmateRepository;
 
 /**
- * The AppInjector class is responsible for providing the application's dependencies.
- * It follows the Singleton pattern to ensure that only one instance of the injector is created.
- * This class initializes all necessary repositories and the ViewModelFactory.
+ * The {@link AppInjector} class is responsible for providing the application's dependencies.
+ * <p>
+ * It follows the Singleton design pattern to ensure that only one instance of the injector is created
+ * throughout the application's lifecycle. This class initializes and holds references to all the repositories
+ * required by the application and provides a centralized {@link ViewModelFactory} for creating ViewModels.
+ * <p>
+ * It simplifies dependency management and ensures proper initialization of components such as Firebase services.
  */
 public class AppInjector {
 
-    // Singleton instance of AppInjector
+    /** Singleton instance of {@link AppInjector}. */
     private static AppInjector instance;
 
-    // Repositories for various data sources and services
+    /** Repository for main application data and user state management. */
     private final MainRepository mainRepository;
+
+    /** Repository for handling user authentication operations. */
     private final AuthRepository authRepository;
+
+    /** Repository for managing lunch-related data. */
     private final LunchRepository lunchRepository;
+
+    /** Repository for handling restaurant-related operations. */
     private final RestaurantRepository restaurantRepository;
+
+    /** Repository for managing workmate-related data. */
     private final WorkmateRepository workmateRepository;
+
+    /** Repository for managing map and geolocation data. */
     private final MapRepository mapRepository;
+
+    /** Repository for handling notification-related data and operations. */
     private final NotificationRepository notificationRepository;
 
-    // Factory for creating ViewModels
-    private ViewModelFactory viewModelFactory;
+    /** Factory for creating ViewModels with the required repositories. */
+    private final ViewModelFactory viewModelFactory;
 
     /**
-     * Private constructor for the AppInjector.
-     * Initializes Firebase and the repositories required by the application.
-     * It also initializes the ViewModelFactory with all repositories.
+     * Private constructor for {@link AppInjector}.
+     * <p>
+     * Initializes all repositories and the {@link ViewModelFactory} required by the application.
+     * This method also initializes Firebase services, such as {@link FirebaseFirestore} and {@link FirebaseAuth}.
      */
     private AppInjector() {
         // Get instances of Firebase services
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
 
-        // Initialize Repositories
-        mainRepository = new MainRepository(firebaseAuth);        // Repository for main app data
-        authRepository = new AuthRepository(firebaseAuth);        // Repository for authentication data
-        lunchRepository = new LunchRepository(firestore);         // Repository for managing lunch data
-        restaurantRepository = new RestaurantRepository();        // Repository for restaurant data (API, cache)
-        workmateRepository = new WorkmateRepository(firestore);   // Repository for managing workmates data
-        mapRepository = new MapRepository();                      // Repository for managing map and geolocation
-        notificationRepository = new NotificationRepository(firestore);  // Repository for managing notifications
+        // Initialize repositories with required dependencies
+        mainRepository = new MainRepository(firebaseAuth);        // Main repository for app data
+        authRepository = new AuthRepository(firebaseAuth);        // Repository for authentication logic
+        lunchRepository = new LunchRepository(firestore);         // Repository for lunch data
+        restaurantRepository = new RestaurantRepository();        // Repository for restaurant data (API/caching)
+        workmateRepository = new WorkmateRepository(firestore);   // Repository for workmate management
+        mapRepository = new MapRepository();                      // Repository for geolocation and map data
+        notificationRepository = new NotificationRepository(firestore);  // Repository for notifications
 
         // Initialize ViewModelFactory with all repositories
         viewModelFactory = new ViewModelFactory(mainRepository, authRepository, lunchRepository,
@@ -58,25 +75,29 @@ public class AppInjector {
     }
 
     /**
-     * Returns the singleton instance of AppInjector.
-     * If the instance does not exist, it is created and returned.
+     * Returns the singleton instance of {@link AppInjector}.
+     * <p>
+     * If the instance does not already exist, it is created. This ensures that only one instance
+     * of the AppInjector is used throughout the application.
      *
-     * @return The singleton instance of AppInjector.
+     * @return The singleton instance of {@link AppInjector}.
      */
     public static synchronized AppInjector getInstance() {
-        // If the instance is null, create it
         if (instance == null) {
-            instance = new AppInjector();
+            instance = new AppInjector();  // Create instance if not already created
         }
         return instance;  // Return the singleton instance
     }
 
     /**
-     * Provides the ViewModelFactory that is used to create ViewModels for the application.
+     * Provides the {@link ViewModelFactory} used for creating ViewModels with the correct dependencies.
+     * <p>
+     * The ViewModelFactory ensures that ViewModels receive the required repositories
+     * during instantiation.
      *
-     * @return The ViewModelFactory containing all required dependencies.
+     * @return The {@link ViewModelFactory} instance containing all required dependencies.
      */
     public ViewModelFactory getViewModelFactory() {
-        return viewModelFactory;  // Return the ViewModelFactory instance
+        return viewModelFactory;  // Return the ViewModelFactory
     }
 }
