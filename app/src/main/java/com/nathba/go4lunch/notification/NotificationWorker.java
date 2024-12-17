@@ -121,22 +121,26 @@ public class NotificationWorker extends Worker {
             }
         }
 
-        // Concatène les noms des collègues dans une chaîne
+        // Concaténer les noms des collègues dans une chaîne
         String colleagueNamesString = TextUtils.join(", ", colleagueNames);
 
-        // Construire la notification
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "LunchChannel")
+        // Récupérer les chaînes localisées depuis les ressources
+        Context context = getApplicationContext();
+        String title = context.getString(R.string.notification_title);
+        String content = context.getString(R.string.notification_content, restaurantName);
+        String bigText = context.getString(R.string.notification_big_text, restaurantName, restaurantAddress, colleagueNamesString);
+
+        // Construire la notification avec les chaînes localisées
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "LunchChannel")
                 .setSmallIcon(R.drawable.ic_lunch)
-                .setContentTitle("Lunch Reminder")
-                .setContentText("Today at " + restaurantName)
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText("Restaurant: " + restaurantName + "\nAddress: " + restaurantAddress +
-                                "\nColleagues: " + colleagueNamesString))
+                .setContentTitle(title)  // Titre localisé
+                .setContentText(content) // Contenu localisé
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(bigText)) // Texte complet localisé
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
         // Envoyer la notification
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         try {
             notificationManager.notify(1, builder.build());
             Log.d(TAG, "Notification sent for restaurant: " + restaurantName);

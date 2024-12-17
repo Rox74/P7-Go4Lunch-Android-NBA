@@ -66,4 +66,7 @@
     <string name="notification_time">Notification Time</string>
     <string name="enable_notifications">Enable Notifications</string>
     <string name="turn_on_off_lunch_notifications">Turn on/off lunch notifications</string>
+    <string name="notification_title">Lunch Reminder</string>
+    <string name="notification_content">Today at %1$s</string>
+    <string name="notification_big_text">Restaurant: %1$s\nAddress: %2$s\nColleagues: %3$s</string>
 </resources>
