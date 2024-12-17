@@ -19,15 +19,33 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Repository class for managing lunch-related data with Firebase Firestore.
+ * <p>
+ * This class provides methods to retrieve, add, and delete lunch data, as well as utility
+ * methods to fetch lunches for specific conditions like "today" or "expired".
+ */
 public class LunchRepository {
 
+    /** Reference to the "lunches" collection in Firestore. */
     private final CollectionReference lunchesCollection;
 
+    /**
+     * Constructor for {@link LunchRepository}.
+     * <p>
+     * Initializes the Firestore collection reference for lunches.
+     *
+     * @param firestore The {@link FirebaseFirestore} instance used for database operations.
+     */
     public LunchRepository(FirebaseFirestore firestore) {
         lunchesCollection = firestore.collection("lunches");
     }
 
-    // Récupérer les lunchs depuis Firebase
+    /**
+     * Retrieves all lunches from Firestore.
+     *
+     * @return A {@link LiveData} object containing a list of {@link Lunch} objects.
+     */
     public LiveData<List<Lunch>> getLunches() {
         MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
         lunchesCollection.addSnapshotListener((snapshots, e) -> {
@@ -48,12 +66,21 @@ public class LunchRepository {
         return lunchesLiveData;
     }
 
-    // Ajouter un lunch dans Firebase
+    /**
+     * Adds a lunch to Firestore.
+     *
+     * @param lunch The {@link Lunch} object to be added.
+     */
     public void addLunch(Lunch lunch) {
         lunchesCollection.document(lunch.getLunchId()).set(lunch);
     }
 
-    // Récupérer les lunchs pour un restaurant spécifique aujourd'hui
+    /**
+     * Retrieves lunches scheduled for a specific restaurant today.
+     *
+     * @param restaurantId The ID of the restaurant.
+     * @return A {@link LiveData} object containing a list of lunches for the specified restaurant.
+     */
     public LiveData<List<Lunch>> getLunchesForRestaurantToday(String restaurantId) {
         MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
         Date today = getToday();
@@ -78,31 +105,12 @@ public class LunchRepository {
         return lunchesLiveData;
     }
 
-    // Méthode mise à jour pour obtenir la date cible en fonction de l'heure
-    private Date getToday() {
-        Calendar calendar = Calendar.getInstance();
-
-        // Vérifier l'heure actuelle
-        if (calendar.get(Calendar.HOUR_OF_DAY) >= 12) {
-            // Si après 12h, obtenir la date de demain
-            calendar.add(Calendar.DAY_OF_MONTH, 1);
-        }
-
-        // Réinitialiser l'heure pour obtenir uniquement la date sans l'heure
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-
-        return calendar.getTime();
-    }
-
     /**
-     * Supprime les lunchs de l'utilisateur pour une date donnée afin d'éviter les doublons.
+     * Deletes a user's lunch for a specific date to avoid duplicates.
      *
-     * @param workmateId L'identifiant de l'utilisateur.
-     * @param date       La date du lunch à supprimer.
-     * @return Une tâche qui complète la suppression.
+     * @param workmateId The ID of the workmate (user).
+     * @param date       The date for which the lunch should be deleted.
+     * @return A {@link Task} representing the completion of the deletion operation.
      */
     public Task<Void> deleteUserLunchForDate(String workmateId, Date date) {
         return lunchesCollection
@@ -122,15 +130,15 @@ public class LunchRepository {
     }
 
     /**
-     * Supprime tous les lunchs dont la date est antérieure à aujourd'hui.
+     * Deletes all lunches that are scheduled before today.
      *
-     * @return Une tâche qui complète la suppression des lunchs périmés.
+     * @return A {@link Task} representing the completion of the deletion operation.
      */
     public Task<Void> deleteExpiredLunches() {
-        Date today = getToday(); // Utiliser la méthode existante pour obtenir la date d'aujourd'hui
+        Date today = getToday();
 
         return lunchesCollection
-                .whereLessThan("date", today) // Rechercher les lunchs avec une date avant aujourd'hui
+                .whereLessThan("date", today)
                 .get()
                 .continueWithTask(task -> {
                     if (task.isSuccessful() && !task.getResult().isEmpty()) {
@@ -138,12 +146,18 @@ public class LunchRepository {
                         for (DocumentSnapshot document : task.getResult()) {
                             batch.delete(document.getReference());
                         }
-                        return batch.commit(); // Effectuer la suppression en lot
+                        return batch.commit();
                     }
-                    return Tasks.forResult(null); // Aucun lunch à supprimer
+                    return Tasks.forResult(null);
                 });
     }
 
+    /**
+     * Retrieves the lunch scheduled for the current user today.
+     *
+     * @param userId The ID of the current user.
+     * @return A {@link LiveData} object containing the user's lunch for today, or {@code null} if not found.
+     */
     public LiveData<Lunch> getUserLunchForToday(String userId) {
         MutableLiveData<Lunch> lunchLiveData = new MutableLiveData<>();
         Date today = getToday();
@@ -173,11 +187,16 @@ public class LunchRepository {
         return lunchLiveData;
     }
 
+    /**
+     * Retrieves all lunches scheduled for today.
+     *
+     * @return A {@link LiveData} object containing a list of lunches scheduled for today.
+     */
     public LiveData<List<Lunch>> getLunchesToday() {
         MutableLiveData<List<Lunch>> lunchesTodayLiveData = new MutableLiveData<>();
 
         lunchesCollection
-                .whereGreaterThanOrEqualTo("date", getToday()) // Utiliser directement getToday pour récupérer les lunchs du jour
+                .whereGreaterThanOrEqualTo("date", getToday())
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful() && task.getResult() != null) {
@@ -188,10 +207,34 @@ public class LunchRepository {
                         }
                         lunchesTodayLiveData.setValue(lunchesToday);
                     } else {
-                        lunchesTodayLiveData.setValue(new ArrayList<>()); // Retourne une liste vide si aucune donnée
+                        lunchesTodayLiveData.setValue(new ArrayList<>());
                     }
                 });
 
         return lunchesTodayLiveData;
+    }
+
+    /**
+     * Utility method to retrieve today's date, reset to midnight.
+     * <p>
+     * If the current time is past 12 PM, it returns the date for tomorrow.
+     *
+     * @return A {@link Date} object representing today's or tomorrow's date.
+     */
+    private Date getToday() {
+        Calendar calendar = Calendar.getInstance();
+
+        // If it's past 12 PM, move to the next day
+        if (calendar.get(Calendar.HOUR_OF_DAY) >= 12) {
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // Reset time to midnight
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        return calendar.getTime();
     }
 }

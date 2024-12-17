@@ -5,12 +5,9 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.nathba.go4lunch.api.OverpassApi;
 import com.nathba.go4lunch.api.YelpApi;
-import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.OverpassResponse;
 import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.models.YelpBusinessResponse;
@@ -18,8 +15,6 @@ import com.nathba.go4lunch.models.YelpBusinessResponse;
 import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -28,46 +23,68 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Repository for managing restaurant data from multiple sources, such as Overpass API, Yelp API,
+ * and Firestore. It provides caching capabilities to optimize API calls and avoid redundant requests.
+ */
 public class RestaurantRepository {
 
+    /** Instance of Overpass API to fetch basic restaurant data. */
     private final OverpassApi overpassApi;
+
+    /** Instance of Yelp API to fetch detailed restaurant data. */
     private final YelpApi yelpApi;
-    private List<Restaurant> cachedRestaurants = new ArrayList<>(); // Cache des restaurants
+
+    /** List to cache fetched restaurants to minimize redundant API calls. */
+    private List<Restaurant> cachedRestaurants = new ArrayList<>();
+
+    /** LiveData containing the list of cached restaurants for observation. */
     private final MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>();
+
+    /** Instance of Firebase Firestore to manage restaurant persistence. */
     private final FirebaseFirestore firestore;
+
+    /** Tag for logging purposes. */
     private static final String TAG = "RestaurantRepository";
 
-    // Map pour suivre l'état de récupération
+    /** Map to track the state of fetched restaurant details to avoid duplicate requests. */
     private final Map<String, Boolean> detailsFetchedMap = new HashMap<>();
 
+    /**
+     * Default constructor that initializes API clients and Firestore instance.
+     */
     public RestaurantRepository() {
         overpassApi = new OverpassApi();
         yelpApi = new YelpApi();
         firestore = FirebaseFirestore.getInstance();
     }
 
-    // Récupérer les restaurants uniquement à partir de plusieurs sources (API Overpass + Yelp)
+    /**
+     * Retrieves a list of restaurants based on the specified location coordinates.
+     * <p>
+     * The method fetches data from Overpass API. If the data is already cached, it returns the cached list.
+     *
+     * @param latitude  The latitude of the user's location.
+     * @param longitude The longitude of the user's location.
+     * @return A {@link LiveData} object containing the list of restaurants.
+     */
     public LiveData<List<Restaurant>> getRestaurants(double latitude, double longitude) {
         MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>();
 
-        // Utiliser les restaurants mis en cache s'ils existent
         if (!cachedRestaurants.isEmpty()) {
             restaurantsLiveData.setValue(cachedRestaurants);
             return restaurantsLiveData;
         }
 
-        // Fetch restaurants depuis Overpass API
         overpassApi.getRestaurants(buildOverpassQuery(latitude, longitude, 500)).enqueue(new Callback<OverpassResponse>() {
             @Override
             public void onResponse(Call<OverpassResponse> call, Response<OverpassResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Restaurant> restaurants = convertToRestaurants(response.body().elements);
-                    cachedRestaurants = restaurants; // Cache les restaurants récupérés
+                    cachedRestaurants = restaurants;
                     restaurantsLiveData.setValue(restaurants);
                 } else {
                     Log.e(TAG, "Failed to fetch restaurants from Overpass API: " + response.message());
@@ -83,28 +100,39 @@ public class RestaurantRepository {
         return restaurantsLiveData;
     }
 
-    // Récupérer les détails du restaurant depuis Yelp
+    /**
+     * Retrieves detailed restaurant data from Yelp API.
+     *
+     * @param restaurantId   The unique identifier of the restaurant.
+     * @param location       The geographical location of the restaurant.
+     * @param restaurantName The name of the restaurant.
+     * @param callback       A callback to handle success or failure of the API call.
+     */
     public void getRestaurantDetails(String restaurantId, GeoPoint location, String restaurantName, RepositoryCallback<Restaurant> callback) {
-        // Vérification dans le cache
         for (Restaurant restaurant : cachedRestaurants) {
             if (restaurant.getRestaurantId().equals(restaurantId)) {
                 Log.d(TAG, "Found restaurant in cache: " + restaurant.getName());
-                // Si des détails sont manquants, fetch depuis Yelp
                 if (restaurant.getAddress() == null || restaurant.getPhotoUrl() == null) {
                     fetchYelpDetails(restaurant, location, callback);
                 } else {
-                    callback.onSuccess(restaurant); // Retourne immédiatement le restaurant depuis le cache
+                    callback.onSuccess(restaurant);
                 }
                 return;
             }
         }
 
-        // Si pas trouvé dans le cache, fetch depuis Yelp
         Log.d(TAG, "Restaurant not found in cache, fetching details from Yelp API");
         Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", false);
         fetchYelpDetails(basicRestaurant, location, callback);
     }
 
+    /**
+     * Fetches restaurant details from Yelp API and updates the provided {@link Restaurant} object.
+     *
+     * @param restaurant The restaurant object to update.
+     * @param location   The location of the restaurant.
+     * @param callback   A callback to handle the API response.
+     */
     private void fetchYelpDetails(Restaurant restaurant, GeoPoint location, RepositoryCallback<Restaurant> callback) {
         String restaurantName = restaurant.getName();
         String locationQuery = location.getLatitude() + "," + location.getLongitude();
@@ -133,12 +161,24 @@ public class RestaurantRepository {
         });
     }
 
-    // Méthode pour construire la requête Overpass
+    /**
+     * Builds an Overpass API query string based on the given coordinates and radius.
+     *
+     * @param latitude  The latitude of the location.
+     * @param longitude The longitude of the location.
+     * @param radius    The search radius in meters.
+     * @return The Overpass API query string.
+     */
     private String buildOverpassQuery(double latitude, double longitude, int radius) {
         return String.format(Locale.US, "[out:json];node[\"amenity\"=\"restaurant\"](around:%d,%f,%f);out;", radius, latitude, longitude);
     }
 
-    // Conversion de la réponse Overpass en objets Restaurant
+    /**
+     * Converts a list of Overpass API response elements into a list of {@link Restaurant} objects.
+     *
+     * @param elements The list of Overpass API elements.
+     * @return A list of {@link Restaurant} objects.
+     */
     private List<Restaurant> convertToRestaurants(List<OverpassResponse.Element> elements) {
         List<Restaurant> restaurants = new ArrayList<>();
         for (OverpassResponse.Element element : elements) {
@@ -159,6 +199,11 @@ public class RestaurantRepository {
         return restaurants;
     }
 
+    /**
+     * Adds a restaurant to the Firestore "restaurants" collection.
+     *
+     * @param restaurant The restaurant object to add.
+     */
     public void addRestaurantToFirestore(Restaurant restaurant) {
         firestore.collection("restaurants")
                 .document(restaurant.getRestaurantId())
@@ -171,6 +216,12 @@ public class RestaurantRepository {
                 });
     }
 
+    /**
+     * Fetches detailed restaurant data for a bulk list of restaurants using Yelp API.
+     *
+     * @param restaurants The list of restaurants to fetch details for.
+     * @return A {@link LiveData} object containing the updated list of restaurants.
+     */
     public LiveData<List<Restaurant>> fetchRestaurantsBulk(List<Restaurant> restaurants) {
         Log.d(TAG, "Starting bulk fetch for Yelp details with " + restaurants.size() + " restaurants");
 
@@ -182,7 +233,6 @@ public class RestaurantRepository {
             Log.d(TAG, "Restaurant " + restaurantId + " detailsFetched: " + isFetched);
 
             if (!isFetched) {
-                // Met à jour le Map pour éviter les appels multiples
                 detailsFetchedMap.put(restaurantId, true);
 
                 Call<YelpBusinessResponse> call = yelpApi.getRestaurantDetails(
@@ -227,7 +277,6 @@ public class RestaurantRepository {
             }
         }
 
-        // Si aucun appel n'a été ajouté, publie immédiatement les restaurants
         if (pendingCalls.get() == 0) {
             restaurantsLiveData.postValue(restaurants);
         }
@@ -235,8 +284,12 @@ public class RestaurantRepository {
         return restaurantsLiveData;
     }
 
+    /**
+     * Returns the cached list of restaurants wrapped in {@link LiveData}.
+     *
+     * @return A {@link LiveData} object containing the cached list of restaurants.
+     */
     public LiveData<List<Restaurant>> getCachedRestaurants() {
-        // Retourne les restaurants mis en cache dans un LiveData
         restaurantsLiveData.setValue(cachedRestaurants);
         return restaurantsLiveData;
     }

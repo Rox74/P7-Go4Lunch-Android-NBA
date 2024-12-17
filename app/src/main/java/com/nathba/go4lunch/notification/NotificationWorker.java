@@ -33,15 +33,40 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Worker class responsible for sending daily lunch notifications to the user.
+ * <p>
+ * It retrieves the user's scheduled lunch, fetches the list of colleagues joining the same restaurant,
+ * and sends a notification to the user with the lunch details.
+ * This worker runs in the background and interacts with Firebase Firestore.
+ */
 public class NotificationWorker extends Worker {
+
+    /** Tag used for logging purposes. */
     private static final String TAG = "NotificationWorker";
+
+    /** Instance of Firestore for database operations. */
     private final FirebaseFirestore firestore;
 
+    /**
+     * Constructs a new {@link NotificationWorker}.
+     *
+     * @param context The application context.
+     * @param params  Worker parameters provided by WorkManager.
+     */
     public NotificationWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
         firestore = FirebaseFirestore.getInstance();
     }
 
+    /**
+     * Executes the background work for sending a lunch notification.
+     * <p>
+     * Fetches the user's lunch for today, retrieves colleagues attending the same restaurant,
+     * and sends a notification if data is found.
+     *
+     * @return The result of the work, always {@link Result#success()}.
+     */
     @NonNull
     @Override
     public Result doWork() {
@@ -59,6 +84,12 @@ public class NotificationWorker extends Worker {
         return Result.success();
     }
 
+    /**
+     * Fetches the user's lunch scheduled for today from Firestore.
+     *
+     * @param userId   The ID of the user.
+     * @param listener Callback invoked with the {@link Lunch} object or {@code null} if no lunch is found.
+     */
     private void fetchUserLunch(String userId, OnLunchFetchedListener listener) {
         Date today = getToday();
 
@@ -76,6 +107,11 @@ public class NotificationWorker extends Worker {
                 });
     }
 
+    /**
+     * Fetches colleagues attending the same restaurant and sends a notification.
+     *
+     * @param lunch The user's lunch details.
+     */
     private void fetchColleaguesAndNotify(Lunch lunch) {
         firestore.collection("lunches")
                 .whereEqualTo("restaurantId", lunch.getRestaurantId())
@@ -99,6 +135,12 @@ public class NotificationWorker extends Worker {
                 });
     }
 
+    /**
+     * Fetches the name of a workmate using their ID from Firestore.
+     *
+     * @param workmateId The workmate's unique identifier.
+     * @param listener   Callback invoked with the workmate's name or {@code null} if not found.
+     */
     private void fetchWorkmateName(String workmateId, OnWorkmateNameFetchedListener listener) {
         firestore.collection("workmates")
                 .document(workmateId)
@@ -112,34 +154,36 @@ public class NotificationWorker extends Worker {
                 });
     }
 
+    /**
+     * Sends a notification to the user with the lunch and colleagues' details.
+     *
+     * @param restaurantName    The name of the restaurant.
+     * @param restaurantAddress The address of the restaurant.
+     * @param colleagueNames    The list of colleagues' names attending the lunch.
+     */
     private void sendNotification(String restaurantName, String restaurantAddress, List<String> colleagueNames) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
                 Log.e(TAG, "Permission POST_NOTIFICATIONS denied. Cannot send notification.");
-                return; // Arrêter l'exécution si la permission est refusée
+                return;
             }
         }
 
-        // Concaténer les noms des collègues dans une chaîne
         String colleagueNamesString = TextUtils.join(", ", colleagueNames);
-
-        // Récupérer les chaînes localisées depuis les ressources
         Context context = getApplicationContext();
         String title = context.getString(R.string.notification_title);
         String content = context.getString(R.string.notification_content, restaurantName);
         String bigText = context.getString(R.string.notification_big_text, restaurantName, restaurantAddress, colleagueNamesString);
 
-        // Construire la notification avec les chaînes localisées
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "LunchChannel")
                 .setSmallIcon(R.drawable.ic_lunch)
-                .setContentTitle(title)  // Titre localisé
-                .setContentText(content) // Contenu localisé
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(bigText)) // Texte complet localisé
+                .setContentTitle(title)
+                .setContentText(content)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(bigText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
-        // Envoyer la notification
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         try {
             notificationManager.notify(1, builder.build());
@@ -149,6 +193,11 @@ public class NotificationWorker extends Worker {
         }
     }
 
+    /**
+     * Gets the current date with time set to 00:00:00 for comparison purposes.
+     *
+     * @return The current date with time reset to midnight.
+     */
     private Date getToday() {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -158,11 +207,12 @@ public class NotificationWorker extends Worker {
         return calendar.getTime();
     }
 
-    // Interfaces pour les callbacks
+    /** Callback interface for fetching the user's lunch. */
     private interface OnLunchFetchedListener {
         void onLunchFetched(Lunch lunch);
     }
 
+    /** Callback interface for fetching a workmate name. */
     private interface OnWorkmateNameFetchedListener {
         void onNameFetched(String name);
     }
