@@ -1,4 +1,17 @@
 <resources>
+
+    <string-array name="language_options">
+        <item>System Default</item>
+        <item>English</item>
+        <item>French</item>
+    </string-array>
+
+    <string-array name="language_values">
+        <item>default</item>
+        <item>en</item>
+        <item>fr</item>
+    </string-array>
+
     <string name="app_name" translatable="false">Go4Lunch</string>
     <string name="app_info">Find a nice restaurant and invite your co-workers for lunch!</string>
     <string name="sign_in_google">Sign in with Google</string>
@@ -42,5 +55,15 @@
     <string name="sort_by_name_desc">Sort by name (Z-A)</string>
     <string name="no_restaurant_selected">%1$s has not selected a restaurant</string>
     <string name="is_eating_at">%1$s is eating at %2$s</string>
-
+    <string name="settings_title">Settings</string>
+    <string name="language_title">Language</string>
+    <string name="language_summary">Select your preferred language</string>
+    <string name="system_default">System Default</string>
+    <string name="english">English</string>
+    <string name="french">French</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_summary">Enable or disable notifications</string>
+    <string name="notification_time">Notification Time</string>
+    <string name="enable_notifications">Enable Notifications</string>
+    <string name="turn_on_off_lunch_notifications">Turn on/off lunch notifications</string>
 </resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Paramètre pour activer/désactiver les notifications -->
+    <SwitchPreferenceCompat
+        android:key="notifications_enabled"
+        android:title="@string/enable_notifications"
+        android:summary="@string/turn_on_off_lunch_notifications"
+        android:defaultValue="true" />
+
+    <!-- Paramètre de langue -->
+    <ListPreference
+        android:key="app_language"
+        android:title="@string/language_title"
+        android:summary="@string/language_summary"
+        android:entries="@array/language_options"
+        android:entryValues="@array/language_values"
+        android:defaultValue="default" />
+
+</PreferenceScreen>

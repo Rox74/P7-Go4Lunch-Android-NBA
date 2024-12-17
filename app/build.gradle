@@ -44,6 +44,7 @@ dependencies {
     implementation libs.uiautomator
     implementation libs.espresso.contrib
     implementation libs.work.runtime
+    implementation libs.preference
 
     testImplementation libs.junit
     testImplementation libs.mockito.core

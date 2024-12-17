@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 public class NotificationScheduler {
     public static void scheduleDailyNotification(Context context) {
-        // Version normale (à décommenter pour la production)
          PeriodicWorkRequest notificationWork = new PeriodicWorkRequest.Builder(NotificationWorker.class, 24, TimeUnit.HOURS)
                  .setInitialDelay(calculateInitialDelay(), TimeUnit.MILLISECONDS)
                  .build();
@@ -30,12 +29,6 @@ public class NotificationScheduler {
                  "DailyNotification",
                  ExistingPeriodicWorkPolicy.REPLACE,
                  notificationWork);
-
-        // Version de test avec un délai court (10 secondes pour tester rapidement les notifications)
-/*        OneTimeWorkRequest notificationTestWork = new OneTimeWorkRequest.Builder(NotificationWorker.class)
-                .setInitialDelay(10, TimeUnit.SECONDS)
-                .build();
-        WorkManager.getInstance(context).enqueue(notificationTestWork);*/
     }
 
     private static long calculateInitialDelay() {

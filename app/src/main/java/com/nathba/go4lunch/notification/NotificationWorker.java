@@ -13,12 +13,14 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Workmate;
@@ -33,14 +35,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class NotificationWorker extends Worker {
     private static final String TAG = "NotificationWorker";
-    private final LunchRepository lunchRepository;
-    private final WorkmateRepository workmateRepository;
+    private final FirebaseFirestore firestore;
 
     public NotificationWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
-        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        this.lunchRepository = new LunchRepository(firestore);
-        this.workmateRepository = new WorkmateRepository(firestore);
+        firestore = FirebaseFirestore.getInstance();
     }
 
     @NonNull
@@ -49,109 +48,118 @@ public class NotificationWorker extends Worker {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         Log.d(TAG, "Executing NotificationWorker for user: " + userId);
 
-        // Utiliser un Handler pour exécuter observeForever sur le thread principal
-        Handler mainHandler = new Handler(Looper.getMainLooper());
-        mainHandler.post(() -> {
-            lunchRepository.getLunches().observeForever(lunches -> {
-                Lunch userLunch = null;
-                for (Lunch lunch : lunches) {
-                    if (lunch.getWorkmateId().equals(userId) && isToday(lunch.getDate())) {
-                        userLunch = lunch;
-                        break;
-                    }
-                }
-
-                if (userLunch != null) {
-                    Log.d(TAG, "Lunch trouvé pour aujourd'hui : " + userLunch.getRestaurantName());
-                    fetchColleaguesAndNotify(userLunch);
-                } else {
-                    Log.d(TAG, "Aucun lunch trouvé pour l'utilisateur aujourd'hui.");
-                }
-            });
+        fetchUserLunch(userId, lunch -> {
+            if (lunch != null) {
+                fetchColleaguesAndNotify(lunch);
+            } else {
+                Log.d(TAG, "No lunch found for today.");
+            }
         });
 
         return Result.success();
     }
 
-    /**
-     * Récupère la liste des collègues et envoie une notification.
-     *
-     * @param lunch Le lunch de l'utilisateur pour aujourd'hui.
-     */
-    private void fetchColleaguesAndNotify(Lunch lunch) {
-        lunchRepository.getLunchesForRestaurantToday(lunch.getRestaurantId()).observeForever(colleagueLunches -> {
-            List<String> colleagueNames = new ArrayList<>();
-            AtomicInteger count = new AtomicInteger(0);  // Suivi du nombre de récupérations de noms
+    private void fetchUserLunch(String userId, OnLunchFetchedListener listener) {
+        Date today = getToday();
 
-            for (Lunch colleagueLunch : colleagueLunches) {
-                String workmateId = colleagueLunch.getWorkmateId();
-
-                // Récupérer le nom du workmate en utilisant workmateId
-                workmateRepository.getWorkmateById(workmateId).observeForever(new Observer<Workmate>() {
-                    @Override
-                    public void onChanged(Workmate workmate) {
-                        if (workmate != null && workmate.getName() != null) {
-                            colleagueNames.add(workmate.getName());  // Ajouter le nom du collègue
-                        }
-
-                        // Incrémenter le compteur une fois le nom récupéré
-                        if (count.incrementAndGet() == colleagueLunches.size()) {
-                            sendNotification(lunch.getRestaurantName(), lunch.getRestaurantAddress(), colleagueNames);
-                        }
-
-                        // Supprimer l'observateur pour éviter une fuite de mémoire
-                        workmateRepository.getWorkmateById(workmateId).removeObserver(this);
+        firestore.collection("lunches")
+                .whereEqualTo("workmateId", userId)
+                .whereGreaterThanOrEqualTo("date", today)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        Lunch lunch = task.getResult().getDocuments().get(0).toObject(Lunch.class);
+                        listener.onLunchFetched(lunch);
+                    } else {
+                        listener.onLunchFetched(null);
                     }
                 });
-            }
-        });
     }
 
-    /**
-     * Envoie une notification locale avec les informations du restaurant et des collègues.
-     *
-     * @param restaurantName    Nom du restaurant.
-     * @param restaurantAddress Adresse du restaurant.
-     * @param colleagueNames    Liste des noms des collègues.
-     */
+    private void fetchColleaguesAndNotify(Lunch lunch) {
+        firestore.collection("lunches")
+                .whereEqualTo("restaurantId", lunch.getRestaurantId())
+                .whereGreaterThanOrEqualTo("date", getToday())
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<String> colleagueNames = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            String workmateId = document.getString("workmateId");
+                            fetchWorkmateName(workmateId, name -> {
+                                if (name != null) {
+                                    colleagueNames.add(name);
+                                    if (colleagueNames.size() == task.getResult().size()) {
+                                        sendNotification(lunch.getRestaurantName(), lunch.getRestaurantAddress(), colleagueNames);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+    }
+
+    private void fetchWorkmateName(String workmateId, OnWorkmateNameFetchedListener listener) {
+        firestore.collection("workmates")
+                .document(workmateId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().exists()) {
+                        listener.onNameFetched(task.getResult().getString("name"));
+                    } else {
+                        listener.onNameFetched(null);
+                    }
+                });
+    }
+
     private void sendNotification(String restaurantName, String restaurantAddress, List<String> colleagueNames) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                Log.e(TAG, getApplicationContext().getString(R.string.permission_post_notifications_denied));
-                return;
+            if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG, "Permission POST_NOTIFICATIONS denied. Cannot send notification.");
+                return; // Arrêter l'exécution si la permission est refusée
             }
         }
 
         // Concatène les noms des collègues dans une chaîne
         String colleagueNamesString = TextUtils.join(", ", colleagueNames);
 
-        // Utilise BigTextStyle pour afficher plus de contenu
+        // Construire la notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "LunchChannel")
                 .setSmallIcon(R.drawable.ic_lunch)
-                .setContentTitle(getApplicationContext().getString(R.string.lunch_reminder_title))
-                .setContentText(getApplicationContext().getString(R.string.lunch_notification_content, restaurantName))
+                .setContentTitle("Lunch Reminder")
+                .setContentText("Today at " + restaurantName)
                 .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText(getApplicationContext().getString(R.string.lunch_notification_big_text, restaurantName, restaurantAddress, colleagueNamesString)))
+                        .bigText("Restaurant: " + restaurantName + "\nAddress: " + restaurantAddress +
+                                "\nColleagues: " + colleagueNamesString))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
+        // Envoyer la notification
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-        notificationManager.notify(1, builder.build());
-        Log.d(TAG, getApplicationContext().getString(R.string.notification_sent_log, restaurantName));
+        try {
+            notificationManager.notify(1, builder.build());
+            Log.d(TAG, "Notification sent for restaurant: " + restaurantName);
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException: Permission POST_NOTIFICATIONS is required but not granted.", e);
+        }
     }
 
-    /**
-     * Vérifie si une date correspond à aujourd'hui.
-     *
-     * @param date La date à vérifier.
-     * @return true si la date est aujourd'hui, false sinon.
-     */
-    private boolean isToday(Date date) {
-        Calendar today = Calendar.getInstance();
-        Calendar lunchDate = Calendar.getInstance();
-        lunchDate.setTime(date);
+    private Date getToday() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
 
-        return today.get(Calendar.YEAR) == lunchDate.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) == lunchDate.get(Calendar.DAY_OF_YEAR);
+    // Interfaces pour les callbacks
+    private interface OnLunchFetchedListener {
+        void onLunchFetched(Lunch lunch);
+    }
+
+    private interface OnWorkmateNameFetchedListener {
+        void onNameFetched(String name);
     }
 }

@@ -3,7 +3,10 @@ package com.nathba.go4lunch.ui;
 import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,7 +14,6 @@ import android.view.Menu;
 import android.view.View;
 import android.view.MenuItem;
 import android.widget.ImageView;
-import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,6 +25,9 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.preference.PreferenceManager;
+import androidx.work.Configuration;
+import androidx.work.WorkManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
@@ -36,6 +41,8 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.notification.NotificationScheduler;
+
+import java.util.Locale;
 
 /**
  * MainActivity class that serves as the main entry point of the application.
@@ -190,6 +197,10 @@ public class MainActivity extends AppCompatActivity {
                 });
             } else if (itemId == R.id.nav_settings) {
                 // Gestion des paramètres
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new SettingsFragment())
+                        .addToBackStack(null)
+                        .commit();
             } else if (itemId == R.id.nav_logout) {
                 mainViewModel.signOut();
             }
@@ -405,5 +416,46 @@ public class MainActivity extends AppCompatActivity {
         if (currentFragment instanceof Searchable) {
             ((Searchable) currentFragment).onSearch(query); // Appelle l'interface implémentée par les fragments
         }
+    }
+
+    private void setupNotificationPreference() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // Observer la préférence pour activer/désactiver les notifications
+        boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", true);
+        if (notificationsEnabled) {
+            NotificationScheduler.scheduleDailyNotification(this);
+            Log.d("MainActivity", "Notifications activées");
+        } else {
+            WorkManager.getInstance(this).cancelUniqueWork("DailyNotification");
+            Log.d("MainActivity", "Notifications désactivées");
+        }
+    }
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(newBase);
+        String languageCode = prefs.getString("app_language", "default");
+
+        // Gérer la langue par défaut du système
+        if (languageCode.equals("default")) {
+            languageCode = Resources.getSystem().getConfiguration().locale.getLanguage();
+        }
+
+        // Appliquer la nouvelle langue
+        Locale locale = new Locale(languageCode);
+        Locale.setDefault(locale);
+
+        android.content.res.Configuration config = new android.content.res.Configuration();
+        config.setLocale(locale);
+
+        Context context = newBase.createConfigurationContext(config);
+        super.attachBaseContext(context);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setupNotificationPreference(); // Vérifie les préférences des notifications
     }
 }
