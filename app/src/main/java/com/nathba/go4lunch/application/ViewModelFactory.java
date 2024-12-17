@@ -59,7 +59,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         // Return the corresponding ViewModel based on the provided class type
         if (modelClass.isAssignableFrom(MainViewModel.class)) {
-            return (T) new MainViewModel(mainRepository);
+            return (T) new MainViewModel(mainRepository, authRepository);
         } else if (modelClass.isAssignableFrom(AuthViewModel.class)) {
             return (T) new AuthViewModel(authRepository);
         } else if (modelClass.isAssignableFrom(LunchViewModel.class)) {

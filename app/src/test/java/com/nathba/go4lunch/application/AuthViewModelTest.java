@@ -38,13 +38,4 @@ public class AuthViewModelTest {
         // Assert
         Mockito.verify(authRepository).signInWithCredential(mockCredential);
     }
-
-    @Test
-    public void testSignOut_CallsRepositoryMethod() {
-        // Act
-        authViewModel.signOut();
-
-        // Assert
-        Mockito.verify(authRepository).signOut();
-    }
 }

@@ -89,6 +89,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        mainViewModel.getCurrentUser().observe(this, firebaseUser -> {
+            if (firebaseUser != null) {
+                Log.d("MainActivity", "User reconnected, restoring main content...");
+                showMainContent(); // Restaurer les menus et le contenu principal
+            } else {
+                Log.d("MainActivity", "User is null, showing login...");
+                showLoginFragment();
+            }
+        });
+
         // Configurer le canal de notification
         createNotificationChannel();
 
@@ -202,7 +212,9 @@ public class MainActivity extends AppCompatActivity {
                         .addToBackStack(null)
                         .commit();
             } else if (itemId == R.id.nav_logout) {
-                mainViewModel.signOut();
+                    // Appel de la déconnexion
+                    Log.d("MainActivity", "Logout initiated...");
+                    mainViewModel.signOut(this);
             }
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
@@ -240,18 +252,26 @@ public class MainActivity extends AppCompatActivity {
      * Displays the main content of the activity and ensures that LoginFragment is removed.
      */
     private void showMainContent() {
+        Log.d("MainActivity", "Restoring main content...");
+
+        // Rendre les composants visibles
         bottomNavigationView.setVisibility(View.VISIBLE);
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+
         if (getSupportActionBar() != null) {
-            getSupportActionBar().show();
+            getSupportActionBar().show(); // Affiche la barre d'outils
         }
-        // Ensure LoginFragment is removed
-        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-        if (currentFragment instanceof LoginFragment) {
-            getSupportFragmentManager().beginTransaction()
-                    .remove(currentFragment)
-                    .commit();
-        }
+
+        // Réinitialiser le menu pour le drawer
+        navigationView.setVisibility(View.VISIBLE);
+
+        // Remplacer le LoginFragment par le fragment principal par défaut
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new MapViewFragment()) // Map par défaut
+                .commit();
+
+        // Invalider et reconstruire les options du menu
+        invalidateOptionsMenu();
     }
 
     /**
@@ -457,5 +477,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         setupNotificationPreference(); // Vérifie les préférences des notifications
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mainViewModel.getCurrentUser().removeObservers(this);
+        Log.d("MainActivity", "Observers detached in onDestroy.");
     }
 }

@@ -17,16 +17,20 @@ public class MainRepository {
 
     public MainRepository(FirebaseAuth firebaseAuth) {
         this.firebaseAuth = firebaseAuth;
+
+        // Observer les changements d'état de connexion
+        firebaseAuth.addAuthStateListener(auth -> {
+            FirebaseUser user = auth.getCurrentUser();
+            currentUser.postValue(user); // Met à jour le LiveData
+            Log.d("MainRepository", "Auth state changed. User: " + (user != null ? user.getEmail() : "null"));
+        });
+
+        // Initialiser la valeur actuelle
         this.currentUser.setValue(firebaseAuth.getCurrentUser());
     }
 
     public LiveData<FirebaseUser> getCurrentUser() {
         return currentUser;
-    }
-
-    public void signOut() {
-        firebaseAuth.signOut();
-        currentUser.setValue(null);
     }
 
     public void checkLoginState() {

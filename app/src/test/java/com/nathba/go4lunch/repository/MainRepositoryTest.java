@@ -41,16 +41,6 @@ public class MainRepositoryTest {
     }
 
     @Test
-    public void signOut_shouldClearCurrentUser() {
-        // Act
-        mainRepository.signOut();
-
-        // Assert
-        verify(firebaseAuth).signOut();
-        assertNull(mainRepository.getCurrentUser().getValue());
-    }
-
-    @Test
     public void checkLoginState_shouldUpdateCurrentUser() {
         // Act
         mainRepository.checkLoginState();

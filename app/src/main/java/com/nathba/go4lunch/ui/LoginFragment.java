@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -92,10 +93,19 @@ public class LoginFragment extends Fragment {
             signInLauncher.launch(signInIntent);
         });
 
-        // Observe authentication state and update the main view model if user is authenticated
         authViewModel.getUserLiveData().observe(getViewLifecycleOwner(), firebaseUser -> {
             if (firebaseUser != null) {
-                mainViewModel.checkLoginState(); // Check and update login state in the main view model
+                Log.d(TAG, "User is signed in: " + firebaseUser.getEmail());
+
+                // Redirige vers le MainFragment ou un autre écran principal
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new MapViewFragment()) // Remplace par ton fragment principal
+                        .commit();
+
+                // Optionnel : Nettoyer la pile de retour pour éviter de revenir sur la page de connexion
+                requireActivity().getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            } else {
+                Log.d(TAG, "User is not signed in.");
             }
         });
 

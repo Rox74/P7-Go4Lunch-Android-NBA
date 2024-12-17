@@ -9,6 +9,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.MutableLiveData;
 
 import com.google.firebase.auth.FirebaseUser;
+import com.nathba.go4lunch.repository.AuthRepository;
 import com.nathba.go4lunch.repository.MainRepository;
 
 import org.junit.Before;
@@ -26,6 +27,9 @@ public class MainViewModelTest {
     private MainRepository mainRepository;
 
     @Mock
+    private AuthRepository authRepository;
+
+    @Mock
     private FirebaseUser mockUser;
 
     private MainViewModel mainViewModel;
@@ -40,7 +44,7 @@ public class MainViewModelTest {
 
         when(mainRepository.getCurrentUser()).thenReturn(liveDataUser);
 
-        mainViewModel = new MainViewModel(mainRepository);
+        mainViewModel = new MainViewModel(mainRepository, authRepository);
     }
 
     @Test
@@ -63,15 +67,6 @@ public class MainViewModelTest {
 
         // Assert
         assertEquals(navItemId, mainViewModel.getSelectedNavigationItem().getValue().intValue());
-    }
-
-    @Test
-    public void signOut_shouldCallRepositorySignOut() {
-        // Act
-        mainViewModel.signOut();
-
-        // Assert
-        verify(mainRepository).signOut();
     }
 
     @Test

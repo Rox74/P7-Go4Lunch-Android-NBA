@@ -1,5 +1,7 @@
 package com.nathba.go4lunch.application;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -23,9 +25,5 @@ public class AuthViewModel extends ViewModel {
 
     public void signInWithCredential(AuthCredential credential) {
         authRepository.signInWithCredential(credential);
-    }
-
-    public void signOut() {
-        authRepository.signOut();
     }
 }
