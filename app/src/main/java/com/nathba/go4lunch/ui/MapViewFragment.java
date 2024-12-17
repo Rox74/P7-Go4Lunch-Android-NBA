@@ -51,6 +51,8 @@ public class MapViewFragment extends Fragment implements LocationListener {
     private static final int ZOOM_LEVEL = 16;
     private static final float MIN_ACCURACY = 100;
     private static final long MIN_TIME_BETWEEN_UPDATES = 10000;
+    private static final long MIN_UPDATE_INTERVAL = 5000; // 5 secondes
+    private long lastUpdateTime = 0;
 
     private MapView mapView;
     private MapViewModel mapViewModel;
@@ -115,26 +117,26 @@ public class MapViewFragment extends Fragment implements LocationListener {
         geolocationAndUpdateMap();
     }
 
-    /**
-     * Récupère la position de l'utilisateur, met à jour la carte et charge les restaurants.
-     */
     private void geolocationAndUpdateMap() {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
         }
 
-        LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) {
+            locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
+        }
+
         Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         if (lastKnownLocation == null) {
             lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
         }
 
-        if (lastKnownLocation != null && isLocationAccurate(lastKnownLocation)) {
-            updateUserLocationOnMap(lastKnownLocation); // Met à jour la carte
-            fetchAndDisplayRestaurants(lastKnownLocation); // Charge les restaurants
+        // Si aucune localisation récente, demander des mises à jour
+        if (lastKnownLocation == null || !isLocationAccurate(lastKnownLocation)) {
+            requestLocationUpdates();
         } else {
-            Toast.makeText(requireContext(), "Impossible de récupérer votre position.", Toast.LENGTH_SHORT).show();
+            onLocationChanged(lastKnownLocation);
         }
     }
 
@@ -160,36 +162,23 @@ public class MapViewFragment extends Fragment implements LocationListener {
             ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
         }
+
+        // Écouter à la fois le GPS et le réseau pour des mises à jour fréquentes
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BETWEEN_UPDATES, 0, this);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BETWEEN_UPDATES, 0, this);
-
-        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (lastKnownLocation == null) {
-            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        }
-        if (lastKnownLocation != null && isLocationAccurate(lastKnownLocation)) {
-            onLocationChanged(lastKnownLocation);
-        }
     }
 
     @Override
     public void onLocationChanged(@NonNull Location location) {
         if (isLocationAccurate(location)) {
-            mapViewModel.setUserLocation(location);
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastUpdateTime > MIN_UPDATE_INTERVAL) {
+                lastUpdateTime = currentTime;
 
-            // Charger les restaurants pour la localisation de l'utilisateur
-            double latitude = location.getLatitude();
-            double longitude = location.getLongitude();
-            mapViewModel.loadRestaurants(latitude, longitude);
-
-            if (!isInitialFetchDone) {
-                fetchAndDisplayRestaurants(location);  // Charger les restaurants avec détails la première fois
-                isInitialFetchDone = true;
-            }
-
-            if (!isInitialCenteringDone) {
+                // Mettre à jour la localisation dans ViewModel et sur la carte
+                mapViewModel.setUserLocation(location);
                 updateUserLocationOnMap(location);
-                isInitialCenteringDone = true;  // Indiquer que le recentrage initial est effectué
+                fetchAndDisplayRestaurants(location);
             }
         }
     }
