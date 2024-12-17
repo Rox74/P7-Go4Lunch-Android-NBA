@@ -1,7 +1,5 @@
 package com.nathba.go4lunch.application;
 
-import android.util.Log;
-
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -36,7 +34,6 @@ public class RestaurantViewModel extends ViewModel {
 
     // Nouvelle méthode pour récupérer les détails des restaurants en bulk depuis Yelp
     public LiveData<List<Restaurant>> fetchRestaurantDetailsBulk(List<Restaurant> restaurants) {
-        Log.d(TAG, "Calling fetchRestaurantDetailsBulk with " + restaurants.size() + " restaurants");
         return restaurantRepository.fetchRestaurantsBulk(restaurants);
     }
 

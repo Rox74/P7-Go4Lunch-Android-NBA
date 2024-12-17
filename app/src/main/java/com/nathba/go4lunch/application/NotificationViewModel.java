@@ -1,7 +1,5 @@
 package com.nathba.go4lunch.application;
 
-import android.util.Log;
-
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -33,7 +31,6 @@ public class NotificationViewModel extends ViewModel {
      * @return LiveData containing NotificationData with restaurant and colleague information.
      */
     public LiveData<NotificationData> getNotificationData(String userId) {
-        Log.d(TAG, "Requesting notification data for user: " + userId);
         if (notificationData == null) {
             notificationData = notificationRepository.getNotificationData(userId);
         }

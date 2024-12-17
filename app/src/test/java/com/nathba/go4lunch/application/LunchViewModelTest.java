@@ -1,9 +1,9 @@
 package com.nathba.go4lunch.application;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +11,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
+import com.google.android.gms.tasks.Task;
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.repository.LunchRepository;
 
@@ -39,10 +40,18 @@ public class LunchViewModelTest {
     @Mock
     private Observer<List<Lunch>> lunchesObserver;
 
+    @Mock
+    private Observer<Lunch> lunchObserver;
+
+    private MutableLiveData<List<Lunch>> lunchesLiveData;
+
     @Before
     public void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
         lunchViewModel = new LunchViewModel(lunchRepository);
+
+        // Mock LiveData
+        lunchesLiveData = new MutableLiveData<>();
     }
 
     @After
@@ -52,64 +61,114 @@ public class LunchViewModelTest {
 
     @Test
     public void testGetLunches_withData() {
-        // Mocked data for lunches
-        MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
-        List<Lunch> lunches = new ArrayList<>();
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date());
-        lunches.add(lunch);
-        lunchesLiveData.setValue(lunches);
+        // Given
+        List<Lunch> lunchList = new ArrayList<>();
+        lunchList.add(new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new Date()));
+        lunchesLiveData.setValue(lunchList);
 
-        // Mock the behavior of lunchRepository
         when(lunchRepository.getLunches()).thenReturn(lunchesLiveData);
 
-        // Observe the LiveData and attach mock Observer
+        // When
         lunchViewModel.getLunches().observeForever(lunchesObserver);
 
-        lunchViewModel.getLunches();
-
-        // Verify observer received the data
-        verify(lunchesObserver).onChanged(lunches);
-
-        // Verify that getLunches is called only once
-        //verify(lunchRepository, times(1)).getLunches();
-
-        // Clean up observer
-        lunchViewModel.getLunches().removeObserver(lunchesObserver);
+        // Then
+        verify(lunchesObserver).onChanged(lunchList);
     }
 
     @Test
     public void testGetLunches_withNoData() {
-        // Mock empty LiveData response
-        MutableLiveData<List<Lunch>> emptyLiveData = new MutableLiveData<>(new ArrayList<>());
-        when(lunchRepository.getLunches()).thenReturn(emptyLiveData);
+        // Given
+        lunchesLiveData.setValue(new ArrayList<>());
+        when(lunchRepository.getLunches()).thenReturn(lunchesLiveData);
 
-        // Attach observer and test empty data scenario
+        // When
         lunchViewModel.getLunches().observeForever(lunchesObserver);
 
-        // Verify observer receives empty list
+        // Then
         verify(lunchesObserver).onChanged(new ArrayList<>());
-
-        // Clean up observer
-        lunchViewModel.getLunches().removeObserver(lunchesObserver);
     }
 
     @Test
     public void testAddLunch() {
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date());
+        // Given
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new Date());
 
-        // Perform action
+        // When
         lunchViewModel.addLunch(lunch);
 
-        // Verify that the method in the repository was called correctly
+        // Then
         verify(lunchRepository).addLunch(lunch);
     }
 
     @Test
     public void testAddLunch_withNullData() {
-        // Attempt to add a null lunch entry
+        // When
         lunchViewModel.addLunch(null);
 
-        // Verify that addLunch was not called due to null input
+        // Then
         verify(lunchRepository, never()).addLunch(any());
+    }
+
+    @Test
+    public void testDeleteUserLunchForDate() {
+        // Given
+        String workmateId = "workmate1";
+        Date date = new Date();
+        Task<Void> mockTask = mock(Task.class);
+
+        when(lunchRepository.deleteUserLunchForDate(workmateId, date)).thenReturn(mockTask);
+
+        // When
+        Task<Void> result = lunchViewModel.deleteUserLunchForDate(workmateId, date);
+
+        // Then
+        verify(lunchRepository).deleteUserLunchForDate(workmateId, date);
+        assertEquals(mockTask, result);
+    }
+
+    @Test
+    public void testDeleteExpiredLunches() {
+        // Given
+        Task<Void> mockTask = mock(Task.class);
+
+        when(lunchRepository.deleteExpiredLunches()).thenReturn(mockTask);
+
+        // When
+        Task<Void> result = lunchViewModel.deleteExpiredLunches();
+
+        // Then
+        verify(lunchRepository).deleteExpiredLunches();
+        assertEquals(mockTask, result);
+    }
+
+    @Test
+    public void testGetUserLunchForToday_withData() {
+        // Given
+        String userId = "workmate1";
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new Date());
+        MutableLiveData<Lunch> lunchLiveData = new MutableLiveData<>(lunch);
+
+        when(lunchRepository.getUserLunchForToday(userId)).thenReturn(lunchLiveData);
+
+        // When
+        lunchViewModel.getUserLunchForToday(userId).observeForever(lunchObserver);
+
+        // Then
+        verify(lunchObserver).onChanged(lunch);
+    }
+
+    @Test
+    public void testGetUserLunchForToday_withNoData() {
+        // Given
+        String userId = "workmate1";
+        MutableLiveData<Lunch> lunchLiveData = new MutableLiveData<>(null);
+
+        when(lunchRepository.getUserLunchForToday(userId)).thenReturn(lunchLiveData);
+
+        // When
+        lunchViewModel.getUserLunchForToday(userId).observeForever(lunchObserver);
+
+        // Then
+        verify(lunchObserver).onChanged(null);
     }
 }

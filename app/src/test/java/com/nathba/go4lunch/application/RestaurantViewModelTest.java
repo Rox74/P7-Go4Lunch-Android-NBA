@@ -1,26 +1,26 @@
 package com.nathba.go4lunch.application;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 
 import com.nathba.go4lunch.models.Lunch;
 import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.repository.LunchRepository;
 import com.nathba.go4lunch.repository.RestaurantRepository;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class RestaurantViewModelTest {
@@ -34,80 +34,124 @@ public class RestaurantViewModelTest {
     @Mock
     private LunchRepository lunchRepository;
 
+    @Mock
+    private Observer<List<Restaurant>> restaurantObserver;
+
+    @Mock
+    private Observer<List<Lunch>> lunchObserver;
+
     private RestaurantViewModel restaurantViewModel;
+
+    private AutoCloseable closeable;
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        closeable = MockitoAnnotations.openMocks(this);
         restaurantViewModel = new RestaurantViewModel(restaurantRepository, lunchRepository);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        closeable.close();
     }
 
     @Test
     public void testGetLunchesForRestaurantToday() {
+        // Given
         String restaurantId = "123";
-        MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>();
-        List<Lunch> lunches = new ArrayList<>();
-        lunches.add(new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date()));
-        lunchesLiveData.setValue(lunches);
+        List<Lunch> lunches = Arrays.asList(
+                new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new Date())
+        );
+        MutableLiveData<List<Lunch>> lunchesLiveData = new MutableLiveData<>(lunches);
 
-        // Mock the lunchRepository behavior
         when(lunchRepository.getLunchesForRestaurantToday(restaurantId)).thenReturn(lunchesLiveData);
 
-        // Observe the result from the ViewModel
-        LiveData<List<Lunch>> result = restaurantViewModel.getLunchesForRestaurantToday(restaurantId);
+        // Observe the result
+        restaurantViewModel.getLunchesForRestaurantToday(restaurantId).observeForever(lunchObserver);
 
-        assertNotNull(result);
-        assertEquals(1, result.getValue().size());
-        assertEquals("workmate1", result.getValue().get(0).getWorkmateId());
-
-        // Verify the interaction with the repository
+        // Then
         verify(lunchRepository).getLunchesForRestaurantToday(restaurantId);
+        verify(lunchObserver).onChanged(lunches);
     }
 
     @Test
     public void testAddLunch() {
-        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new java.util.Date());
+        // Given
+        Lunch lunch = new Lunch("1", "workmate1", "restaurant123", "Le 123", "3 rue de Paris", new Date());
 
-        // No need to mock since it's a void method
+        // When
         restaurantViewModel.addLunch(lunch);
 
-        // Verify the method in the repository is called
+        // Then
         verify(lunchRepository).addLunch(lunch);
     }
 
     @Test
     public void testGetRestaurants() {
+        // Given
         double latitude = 48.8566;
         double longitude = 2.3522;
+        List<Restaurant> restaurants = Arrays.asList(
+                new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", false)
+        );
+        MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>(restaurants);
 
-        // Prepare mocked data
-        MutableLiveData<List<Restaurant>> restaurantsLiveData = new MutableLiveData<>();
-        List<Restaurant> restaurants = new ArrayList<>();
-        restaurants.add(new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", false));
-        restaurantsLiveData.setValue(restaurants);
-
-        // Mock the repository behavior
         when(restaurantRepository.getRestaurants(latitude, longitude)).thenReturn(restaurantsLiveData);
 
-        // Call the method in the ViewModel
-        LiveData<List<Restaurant>> result = restaurantViewModel.getRestaurants(latitude, longitude);
+        // Observe the result
+        restaurantViewModel.getRestaurants(latitude, longitude).observeForever(restaurantObserver);
 
-        assertNotNull(result);
-        assertEquals(1, result.getValue().size());
-        assertEquals("Restaurant A", result.getValue().get(0).getName());
-
-        // Verify the interaction with the repository
+        // Then
         verify(restaurantRepository).getRestaurants(latitude, longitude);
+        verify(restaurantObserver).onChanged(restaurants);
     }
 
     @Test
     public void testAddRestaurant() {
+        // Given
         Restaurant restaurant = new Restaurant("1", "Restaurant A", "Address 1", "", 4.5, null, "", "", "", false);
 
-        // Call the method in the ViewModel
+        // When
         restaurantViewModel.addRestaurant(restaurant);
 
-        // Verify the interaction with the repository
+        // Then
         verify(restaurantRepository).addRestaurantToFirestore(restaurant);
+    }
+
+    @Test
+    public void testFetchRestaurantDetailsBulk() {
+        // Given
+        List<Restaurant> restaurants = Arrays.asList(
+                new Restaurant("1", "Restaurant A", "Address A", "", 4.5, null, "", "", "", false),
+                new Restaurant("2", "Restaurant B", "Address B", "", 4.0, null, "", "", "", false)
+        );
+        MutableLiveData<List<Restaurant>> detailedRestaurantsLiveData = new MutableLiveData<>(restaurants);
+
+        when(restaurantRepository.fetchRestaurantsBulk(restaurants)).thenReturn(detailedRestaurantsLiveData);
+
+        // Observe the result
+        restaurantViewModel.fetchRestaurantDetailsBulk(restaurants).observeForever(restaurantObserver);
+
+        // Then
+        verify(restaurantRepository).fetchRestaurantsBulk(restaurants);
+        verify(restaurantObserver).onChanged(restaurants);
+    }
+
+    @Test
+    public void testGetDetailedRestaurants() {
+        // Given
+        List<Restaurant> cachedRestaurants = Arrays.asList(
+                new Restaurant("1", "Restaurant A", "Address A", "", 4.5, null, "", "", "", false)
+        );
+        MutableLiveData<List<Restaurant>> cachedRestaurantsLiveData = new MutableLiveData<>(cachedRestaurants);
+
+        when(restaurantRepository.getCachedRestaurants()).thenReturn(cachedRestaurantsLiveData);
+
+        // Observe the result
+        restaurantViewModel.getDetailedRestaurants().observeForever(restaurantObserver);
+
+        // Then
+        verify(restaurantRepository).getCachedRestaurants();
+        verify(restaurantObserver).onChanged(cachedRestaurants);
     }
 }

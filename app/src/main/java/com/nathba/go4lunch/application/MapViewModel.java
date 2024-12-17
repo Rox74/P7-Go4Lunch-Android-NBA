@@ -1,7 +1,6 @@
 package com.nathba.go4lunch.application;
 
 import android.location.Location;
-import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -16,7 +15,6 @@ import com.nathba.go4lunch.repository.RestaurantRepository;
 
 import org.osmdroid.util.GeoPoint;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MapViewModel extends ViewModel {
@@ -43,18 +41,15 @@ public class MapViewModel extends ViewModel {
 
     // Method to fetch restaurant details from the repository
     public void fetchRestaurantDetails(String restaurantId, GeoPoint location, String restaurantName) {
-        Log.d(TAG, "Fetching details for restaurant: " + restaurantName + " from repository");
 
         restaurantRepository.getRestaurantDetails(restaurantId, location, restaurantName, new RepositoryCallback<Restaurant>() {
             @Override
             public void onSuccess(Restaurant restaurant) {
-                Log.d(TAG, "Successfully retrieved restaurant details: " + restaurant.getName());
                 selectedRestaurant.setValue(restaurant);
             }
 
             @Override
             public void onError(Throwable t) {
-                Log.e(TAG, "Failed to retrieve restaurant details: " + t.getMessage());
                 // Créer une instance de Restaurant avec des valeurs par défaut
                 Restaurant basicRestaurant = new Restaurant(restaurantId, restaurantName, "", "", 0.0, location, "", "", "", false);
                 selectedRestaurant.setValue(basicRestaurant); // Utiliser des détails de base en cas d'erreur
@@ -74,7 +69,6 @@ public class MapViewModel extends ViewModel {
 
     // Set the user's location
     public void setUserLocation(Location location) {
-        Log.d(TAG, "Setting user location: " + location);
         userLocation.setValue(location);
     }
 
@@ -85,7 +79,6 @@ public class MapViewModel extends ViewModel {
 
     // Load restaurants based on the user's location
     public void loadRestaurants(double latitude, double longitude) {
-        Log.d(TAG, "Loading restaurants at latitude: " + latitude + ", longitude: " + longitude);
         mapRepository.loadRestaurants(latitude, longitude);
     }
 

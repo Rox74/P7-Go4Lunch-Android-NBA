@@ -1,7 +1,6 @@
 package com.nathba.go4lunch.application;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -37,7 +36,6 @@ public class MainViewModel extends ViewModel {
     }
 
     public void checkLoginState() {
-        Log.d("MainViewModel", "Checking login state...");
         mainRepository.checkLoginState();
     }
 
@@ -46,7 +44,6 @@ public class MainViewModel extends ViewModel {
     }
 
     public void signOut(Context context) {
-        Log.d("MainViewModel", "Triggering full sign-out...");
         authRepository.revokeAccessAndSignOut(context);
     }
 }
