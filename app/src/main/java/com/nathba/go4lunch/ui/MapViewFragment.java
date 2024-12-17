@@ -40,12 +40,13 @@ import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Fragment that displays a map view using OpenStreetMap and handles user location updates.
  */
-public class MapViewFragment extends Fragment implements LocationListener {
+public class MapViewFragment extends Fragment implements LocationListener, Searchable {
 
     private static final String TAG = "MapViewFragment";
     private static final int ZOOM_LEVEL = 16;
@@ -59,8 +60,8 @@ public class MapViewFragment extends Fragment implements LocationListener {
     private ViewModelFactory viewModelFactory;
     private LocationManager locationManager;
     private Marker userLocationMarker;
-    private boolean isInitialFetchDone = false;  // Indicateur pour le chargement initial des détails
-    private boolean isInitialCenteringDone = false;
+    private List<Marker> restaurantMarkers = new ArrayList<>(); // Liste des marqueurs des restaurants
+    private List<Restaurant> allRestaurants = new ArrayList<>(); // Liste complète des restaurants
 
     @Nullable
     @Override
@@ -235,7 +236,23 @@ public class MapViewFragment extends Fragment implements LocationListener {
     private void displayRestaurants(List<Restaurant> restaurants, @Nullable List<Lunch> lunches) {
         if (restaurants == null) return;
 
-        // Clear old markers (except user location)
+        // Vider les anciens marqueurs (sauf localisation utilisateur)
+        clearRestaurantMarkers();
+        restaurantMarkers.clear();
+        allRestaurants.clear();
+
+        allRestaurants.addAll(restaurants); // Stocker la liste complète
+
+        for (Restaurant restaurant : restaurants) {
+            boolean hasLunch = lunches != null && hasLunch(lunches, restaurant);
+            Marker marker = setupRestaurantMarker(restaurant, hasLunch);
+            restaurantMarkers.add(marker); // Ajouter le marqueur à la liste
+        }
+
+        mapView.invalidate(); // Rafraîchir la carte
+    }
+
+    private void clearRestaurantMarkers() {
         List<Overlay> overlays = mapView.getOverlays();
         for (int i = overlays.size() - 1; i >= 0; i--) {
             if (overlays.get(i) instanceof Marker) {
@@ -245,14 +262,6 @@ public class MapViewFragment extends Fragment implements LocationListener {
                 }
             }
         }
-
-        // Add new markers
-        for (Restaurant restaurant : restaurants) {
-            boolean hasLunch = lunches != null && hasLunch(lunches, restaurant);
-            setupRestaurantMarker(restaurant, hasLunch);
-        }
-
-        mapView.invalidate(); // Refresh map
     }
 
     private boolean hasLunch(List<Lunch> lunches, Restaurant restaurant) {
@@ -269,29 +278,24 @@ public class MapViewFragment extends Fragment implements LocationListener {
         return false;
     }
 
-    private void setupRestaurantMarker(Restaurant restaurant, boolean hasLunch) {
+    private Marker setupRestaurantMarker(Restaurant restaurant, boolean hasLunch) {
         Marker restaurantMarker = new Marker(mapView);
         restaurantMarker.setPosition(restaurant.getLocation());
         restaurantMarker.setTitle(restaurant.getName());
 
-        // Utiliser des ressources distinctes pour rouge et vert
         int markerResource = hasLunch ? R.drawable.ic_restaurant_marker_green : R.drawable.ic_restaurant_marker_red;
         Drawable markerIcon = ContextCompat.getDrawable(requireContext(), markerResource);
         if (markerIcon != null) {
             restaurantMarker.setIcon(markerIcon);
-            Log.d("MapViewFragment", "Marker set for " + restaurant.getName() + ": " + (hasLunch ? "GREEN" : "RED"));
-        } else {
-            Log.e("MapViewFragment", "Failed to load marker icon for " + restaurant.getName());
         }
 
         restaurantMarker.setOnMarkerClickListener((marker, mapView) -> {
-            GeoPoint location = restaurant.getLocation();
-            String restaurantName = restaurant.getName();
-            fetchYelpDetails(restaurant.getRestaurantId(), location, restaurantName);
+            fetchYelpDetails(restaurant.getRestaurantId(), restaurant.getLocation(), restaurant.getName());
             return true;
         });
 
         mapView.getOverlays().add(restaurantMarker);
+        return restaurantMarker; // Retourner le marqueur
     }
 
     private void fetchYelpDetails(String restaurantId, GeoPoint location, String restaurantName) {
@@ -317,6 +321,41 @@ public class MapViewFragment extends Fragment implements LocationListener {
                 .replace(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit();
+    }
+
+    private void filterMarkers(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            // Afficher tous les marqueurs si la recherche est vide
+            for (Marker marker : restaurantMarkers) {
+                marker.setEnabled(true);
+                marker.setVisible(true);
+            }
+        } else {
+            // Filtrer les marqueurs en fonction de la requête
+            for (int i = 0; i < allRestaurants.size(); i++) {
+                Marker marker = restaurantMarkers.get(i);
+                Restaurant restaurant = allRestaurants.get(i);
+
+                if (restaurant.getName().toLowerCase().contains(query.toLowerCase())) {
+                    marker.setEnabled(true);
+                    marker.setVisible(true);
+                } else {
+                    marker.setEnabled(false);
+                    marker.setVisible(false);
+                }
+            }
+        }
+        mapView.invalidate(); // Rafraîchir la carte
+    }
+
+    @Override
+    public void onSort(String criterion) {
+        // Tri des restaurants si nécessaire
+    }
+
+    @Override
+    public void onSearch(String query) {
+        filterMarkers(query);
     }
 
     @Override
