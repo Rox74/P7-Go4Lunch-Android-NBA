@@ -72,15 +72,6 @@ public class MapViewModel extends ViewModel {
         return restaurants;
     }
 
-    public LiveData<List<Restaurant>> getRestaurants(double latitude, double longitude) {
-        return restaurantRepository.getRestaurants(latitude, longitude);
-    }
-
-    // Expose the user's location to observers
-    public LiveData<Location> getUserLocation() {
-        return userLocation;
-    }
-
     // Set the user's location
     public void setUserLocation(Location location) {
         Log.d(TAG, "Setting user location: " + location);

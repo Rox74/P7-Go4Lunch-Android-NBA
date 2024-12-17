@@ -1,5 +1,7 @@
 package com.nathba.go4lunch.ui;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,11 +11,14 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.nathba.go4lunch.R;
 import com.nathba.go4lunch.application.MapViewModel;
 import com.nathba.go4lunch.application.RestaurantViewModel;
@@ -29,9 +34,9 @@ import java.util.List;
 public class RestaurantListFragment extends Fragment implements Searchable {
 
     private RestaurantViewModel restaurantViewModel;
-    private MapViewModel mapViewModel; // Le ViewModel pour la localisation
     private RecyclerView recyclerView;
     private RestaurantAdapter adapter;
+    private FusedLocationProviderClient fusedLocationClient;
 
     private List<Restaurant> fullRestaurantList = new ArrayList<>();
     private List<Restaurant> filteredRestaurantList = new ArrayList<>();
@@ -44,7 +49,6 @@ public class RestaurantListFragment extends Fragment implements Searchable {
 
         // Utilisez le ViewModelFactory pour instancier MapViewModel et RestaurantViewModel
         ViewModelFactory viewModelFactory = AppInjector.getInstance().getViewModelFactory();
-        mapViewModel = new ViewModelProvider(this, viewModelFactory).get(MapViewModel.class);
         restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
 
         // Initialisation de la RecyclerView
@@ -55,7 +59,7 @@ public class RestaurantListFragment extends Fragment implements Searchable {
 
         // Observer les données
         observeDetailedRestaurants();
-        observeUserLocation();
+        fetchUserLocationDirectly();
 
         return view;
     }
@@ -80,18 +84,24 @@ public class RestaurantListFragment extends Fragment implements Searchable {
         }
     }
 
-    private void observeUserLocation() {
-        if (mapViewModel != null) {
-            mapViewModel.getUserLocation().observe(getViewLifecycleOwner(), location -> {
-                if (location != null) {
-                    userLocation = location; // Mettre à jour la localisation de l'utilisateur
-                } else {
-                    Log.e("RestaurantListFragment", "User location is null");
-                }
-            });
-        } else {
-            Log.e("RestaurantListFragment", "MapViewModel is null");
+    private void fetchUserLocationDirectly() {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
+
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            return;
         }
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        userLocation = location;
+                        Log.d("RestaurantListFragment", "User location updated: " + location.getLatitude() + ", " + location.getLongitude());
+                    } else {
+                        Log.e("RestaurantListFragment", "Failed to retrieve location");
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("RestaurantListFragment", "Error getting location", e));
     }
 
     @Override
@@ -115,8 +125,10 @@ public class RestaurantListFragment extends Fragment implements Searchable {
     public void onSort(String criterion) {
         switch (criterion) {
             case "distance":
+                Log.d("SortDebug", "User location: " + userLocation);
                 if (userLocation != null) {
                     // Tri par distance
+                    Log.d("SortDebug", "User location: Lat=" + userLocation.getLatitude() + ", Lon=" + userLocation.getLongitude());
                     Collections.sort(filteredRestaurantList, new Comparator<Restaurant>() {
                         @Override
                         public int compare(Restaurant r1, Restaurant r2) {
@@ -135,9 +147,14 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                                     result2
                             );
 
+                            Log.d("SortDebug", "Restaurant: " + r1.getName() + " - Location: " + r1.getLocation());
+                            Log.d("SortDebug", "Restaurant: " + r2.getName() + " - Location: " + r2.getLocation());
+
                             return Float.compare(result1[0], result2[0]); // Tri par distance croissante
                         }
                     });
+                } else {
+                    Log.e("SortDebug", "User location is NULL");
                 }
                 break;
             case "stars":

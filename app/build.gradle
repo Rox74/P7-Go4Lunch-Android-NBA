@@ -45,6 +45,7 @@ dependencies {
     implementation libs.espresso.contrib
     implementation libs.work.runtime
     implementation libs.preference
+    implementation libs.play.services.location
 
     testImplementation libs.junit
     testImplementation libs.mockito.core

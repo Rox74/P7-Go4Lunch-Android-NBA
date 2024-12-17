@@ -63,17 +63,6 @@ public class MapViewModelTest {
     }
 
     @Test
-    public void setUserLocation_shouldUpdateUserLocation() {
-        // Met à jour la localisation de l'utilisateur avec le mock de Location
-        mapViewModel.setUserLocation(mockLocation);
-
-        // Vérifie que la localisation est bien mise à jour
-        LiveData<Location> locationLiveData = mapViewModel.getUserLocation();
-        assertNotNull(locationLiveData.getValue());
-        assertEquals(mockLocation, locationLiveData.getValue());
-    }
-
-    @Test
     public void loadRestaurants_shouldCallRepository() {
         // Simule le chargement des restaurants avec des coordonnées
         double latitude = 48.8566;
