@@ -47,13 +47,14 @@ public class LoginFragmentTest {
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
         int y = (int) (device.getDisplayHeight() / 2.1);
+        int y2 = (int) (device.getDisplayHeight() / 1.7);
         device.click(x, y);  // Clic au centre de l'écran pour le compte Google
 
         // Ajouter un autre délai pour laisser le temps à la fenêtre de localisation de s'afficher
         Thread.sleep(3200);  // Attendre 3,2 secondes pour la fenêtre de localisation
 
         // Simuler un clic au centre de l'écran pour la fenêtre de localisation
-        device.click(x, y);  // Clic au centre de l'écran pour la localisation
+        device.click(x, y2);  // Clic au centre de l'écran pour la localisation
 
         // Observer le changement d'interface après connexion et autorisation de localisation
         onView(withId(R.id.drawer_layout)).check(matches(isDisplayed()));

@@ -57,6 +57,7 @@ public class WorkmateFragmentTest {
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
         int y = (int) (device.getDisplayHeight() / 2.1);
+        int y2 = (int) (device.getDisplayHeight() / 1.7);
 
         device.click(x, y);  // Clic au centre de l'écran
 
@@ -64,7 +65,7 @@ public class WorkmateFragmentTest {
         Thread.sleep(5000);
 
         // Simuler un clic au centre de l'écran pour valider la localisation
-        device.click(x, y);
+        device.click(x, y2);
     }
 
     @Test

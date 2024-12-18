@@ -59,6 +59,7 @@ public class RestaurantListFragmentTest {
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
         int y = (int) (device.getDisplayHeight() / 2.1);
+        int y2 = (int) (device.getDisplayHeight() / 1.7);
 
         device.click(x, y);  // Clic au centre de l'écran
 
@@ -66,14 +67,23 @@ public class RestaurantListFragmentTest {
         Thread.sleep(5000);
 
         // Simuler un clic au centre de l'écran pour valider la localisation
-        device.click(x, y);
+        device.click(x, y2);
     }
 
     @Test
     public void testRestaurantListFragment_DisplaysCorrectly() throws InterruptedException {
+
+        // Ouvrir le fragment MapView
+        onView(withId(R.id.bottom_navigation)).perform(click());
+        onView(withId(R.id.nav_map_view)).perform(click());
+
+        Thread.sleep(1000);
+
         // Naviguer vers la vue liste de restaurants
         onView(withId(R.id.bottom_navigation)).perform(click());
         onView(withId(R.id.nav_list_view)).perform(click());
+
+        Thread.sleep(3000);
 
         // Vérifier que la RecyclerView des restaurants est affichée
         onView(withId(R.id.recyclerView)).check(matches(isDisplayed()));

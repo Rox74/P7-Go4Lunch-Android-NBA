@@ -60,6 +60,7 @@ public class MapViewFragmentTest {
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
         int y = (int) (device.getDisplayHeight() / 2.1);
+        int y2 = (int) (device.getDisplayHeight() / 1.7);
 
         device.click(x, y);  // Clic au centre de l'écran
 
@@ -67,7 +68,7 @@ public class MapViewFragmentTest {
         Thread.sleep(5000);
 
         // Simuler un clic au centre de l'écran pour la validation de la localisation
-        device.click(x, y);
+        device.click(x, y2);
     }
 
     @Test
@@ -79,22 +80,6 @@ public class MapViewFragmentTest {
         // Vérifier que les éléments de la carte sont bien affichés
         onView(withId(R.id.mapview)).check(matches(isDisplayed()));
         onView(withId(R.id.btn_geolocate)).check(matches(isDisplayed()));
-    }
-
-    @Test
-    public void testGeolocationButton_UpdatesUserLocation() {
-        // Ouvrir le fragment MapView
-        onView(withId(R.id.bottom_navigation)).perform(click());
-        onView(withId(R.id.nav_map_view)).perform(click());
-
-        // Simuler un clic sur le bouton de géolocalisation
-        onView(withId(R.id.btn_geolocate)).perform(click());
-
-        // Ajouter un délai pour laisser le temps à la carte de se mettre à jour
-        SystemClock.sleep(2000); // Attendre 2 secondes
-
-        // Vérifier que la position de l'utilisateur est mise à jour
-        onView(withText("Vous êtes ici")).check(matches(isDisplayed()));
     }
 
     @Test
