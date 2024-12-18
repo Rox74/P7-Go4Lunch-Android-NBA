@@ -114,7 +114,7 @@ public class RestaurantDetailFragment extends Fragment {
         if (restaurantAddress != null && !restaurantAddress.isEmpty()) {
             restaurantAddressView.setText(restaurantAddress);
         } else {
-            restaurantAddressView.setText("Address not available");
+            restaurantAddressView.setText(R.string.address_not_available);
         }
 
         // Mise à jour de l'image
@@ -142,13 +142,13 @@ public class RestaurantDetailFragment extends Fragment {
                 startActivity(intent);
             });
         } else {
-            restaurantPhoneButton.setText("Phone not available");
+            restaurantPhoneButton.setText(R.string.phone_not_available);
             restaurantPhoneButton.setEnabled(false);
         }
 
         // Mise à jour du bouton site web
         if (restaurantWebsite != null && !restaurantWebsite.isEmpty()) {
-            restaurantWebsiteButton.setText("Visit Website");
+            restaurantWebsiteButton.setText(R.string.visit_website);
             restaurantWebsiteButton.setEnabled(true);
             restaurantWebsiteButton.setOnClickListener(v -> {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -156,7 +156,7 @@ public class RestaurantDetailFragment extends Fragment {
                 startActivity(intent);
             });
         } else {
-            restaurantWebsiteButton.setText("Website not available");
+            restaurantWebsiteButton.setText(R.string.website_not_available);
             restaurantWebsiteButton.setEnabled(false);
         }
 
@@ -164,7 +164,7 @@ public class RestaurantDetailFragment extends Fragment {
         if (restaurantOpeningHours != null && !restaurantOpeningHours.isEmpty()) {
             restaurantHoursView.setText(restaurantOpeningHours);
         } else {
-            restaurantHoursView.setText("Opening hours not available"); // Message d'indisponibilité
+            restaurantHoursView.setText(R.string.opening_hours_not_available); // Message d'indisponibilité
         }
     }
 

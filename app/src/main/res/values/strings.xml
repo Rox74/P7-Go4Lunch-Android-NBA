@@ -69,4 +69,9 @@
     <string name="notification_title">Lunch Reminder</string>
     <string name="notification_content">Today at %1$s</string>
     <string name="notification_big_text">Restaurant: %1$s\nAddress: %2$s\nColleagues: %3$s</string>
+    <string name="address_not_available">Address not available</string>
+    <string name="phone_not_available">Phone not available</string>
+    <string name="visit_website">Visit Website</string>
+    <string name="website_not_available">Website not available</string>
+    <string name="opening_hours_not_available">Opening hours not available</string>
 </resources>
