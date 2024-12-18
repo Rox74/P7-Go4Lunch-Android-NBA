@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "821584108171",
     "project_id": "go4lunch-c71cb",
-    "storage_bucket": "go4lunch-c71cb.appspot.com"
+    "storage_bucket": "go4lunch-c71cb.firebasestorage.app"
   },
   "client": [
     {
@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "821584108171-4kt47rv0ole6g5si2dslqmhhac15b447.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nathba.go4lunch",
+            "certificate_hash": "d73323c870c580ad0be31015666fc90938d52c11"
+          }
+        },
+        {
           "client_id": "821584108171-7hlvovc7p3nodo2ebslna9rjhm4on31d.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nathba.go4lunch",
             "certificate_hash": "4cce388fc28d04dab14a271efdb3e6203ee3e5bb"
+          }
+        },
+        {
+          "client_id": "821584108171-rsfh8ohto514e6jil8rohp9qlggh8t61.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nathba.go4lunch",
+            "certificate_hash": "0c1266c3933e0c0ec970a7a4eed15e9353b8a9ca"
           }
         },
         {

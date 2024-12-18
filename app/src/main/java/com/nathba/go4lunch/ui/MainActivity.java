@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -26,7 +27,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
-import androidx.work.Configuration;
 import androidx.work.WorkManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -41,6 +41,9 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
 import com.nathba.go4lunch.notification.NotificationScheduler;
+
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.security.ProviderInstaller;
 
 import java.util.Locale;
 
@@ -63,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Installer le provider de sécurité
+        installSecurityProvider();
 
         // Obtain ViewModelFactory from AppInjector
         viewModelFactory = AppInjector.getInstance().getViewModelFactory();
@@ -133,6 +139,24 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("MainActivity", "NotificationManager is null, channel not created.");
             }
         }
+    }
+
+    private void installSecurityProvider() {
+        ProviderInstaller.installIfNeededAsync(this, new ProviderInstaller.ProviderInstallListener() {
+            @Override
+            public void onProviderInstalled() {
+                Log.d("ProviderInstaller", "Security provider installed successfully.");
+            }
+
+            @Override
+            public void onProviderInstallFailed(int errorCode, Intent recoveryIntent) {
+                Log.e("ProviderInstaller", "Failed to install security provider: " + errorCode);
+                GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+                if (apiAvailability.isUserResolvableError(errorCode)) {
+                    apiAvailability.getErrorDialog(MainActivity.this, errorCode, 0).show();
+                }
+            }
+        });
     }
 
     /**
