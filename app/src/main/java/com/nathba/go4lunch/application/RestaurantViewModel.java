@@ -118,4 +118,16 @@ public class RestaurantViewModel extends ViewModel {
     public LiveData<List<Restaurant>> getDetailedRestaurants() {
         return restaurantRepository.getCachedRestaurants();
     }
+
+    public void addLike(String userId, String restaurantId) {
+        restaurantRepository.addLike(userId, restaurantId);
+    }
+
+    public void removeLike(String userId, String restaurantId) {
+        restaurantRepository.removeLike(userId, restaurantId);
+    }
+
+    public LiveData<Boolean> isRestaurantLikedByUser(String userId, String restaurantId) {
+        return restaurantRepository.isRestaurantLikedByUser(userId, restaurantId);
+    }
 }

@@ -52,6 +52,7 @@ public class RestaurantDetailFragment extends Fragment {
     private String restaurantOpeningHours;
     private Double restaurantRating;
     private GeoPoint restaurantLocation;
+    private Button likeButton;
 
     private LinearLayout joiningWorkmatesList;
 
@@ -92,7 +93,42 @@ public class RestaurantDetailFragment extends Fragment {
         Button addLunchButton = view.findViewById(R.id.btn_add_lunch);
         addLunchButton.setOnClickListener(v -> addLunchToFirebase());
 
+        // Bouton Like
+        likeButton = view.findViewById(R.id.like_button);
+        setupLikeButton();
+
         return view;
+    }
+
+    private void setupLikeButton() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) return;
+
+        String userId = currentUser.getUid();
+
+        // Vérifier si le like existe
+        restaurantViewModel.isRestaurantLikedByUser(userId, restaurantId).observe(getViewLifecycleOwner(), isLiked -> {
+            if (isLiked != null && isLiked) {
+                likeButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_like_green, 0, 0, 0);
+            } else {
+                likeButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_like_black, 0, 0, 0);
+            }
+        });
+
+        // Gérer le clic sur le bouton
+        likeButton.setOnClickListener(v -> toggleLike(userId));
+    }
+
+    private void toggleLike(String userId) {
+        restaurantViewModel.isRestaurantLikedByUser(userId, restaurantId).observe(getViewLifecycleOwner(), isLiked -> {
+            if (isLiked != null && isLiked) {
+                restaurantViewModel.removeLike(userId, restaurantId);
+                likeButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_like_black, 0, 0, 0);
+            } else {
+                restaurantViewModel.addLike(userId, restaurantId);
+                likeButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_like_green, 0, 0, 0);
+            }
+        });
     }
 
     private void displayRestaurantDetails(View view) {
