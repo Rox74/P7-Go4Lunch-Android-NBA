@@ -70,8 +70,18 @@
     <string name="notification_content">Today at %1$s</string>
     <string name="notification_big_text">Restaurant: %1$s\nAddress: %2$s\nColleagues: %3$s</string>
     <string name="address_not_available">Address not available</string>
-    <string name="phone_not_available">Phone not available</string>
     <string name="visit_website">Visit Website</string>
+    <string name="rating_not_available">Rating not available</string>
+    <string name="phone_not_available">Phone not available</string>
     <string name="website_not_available">Website not available</string>
     <string name="opening_hours_not_available">Opening hours not available</string>
+    <string name="lunch_updated">Lunch updated for the selected date</string>
+    <string name="user_not_connected">User not connected</string>
+    <string name="no_colleague_chose_restaurant">No colleague chose this restaurant</string>
+    <string name="restaurant_name">Restaurant Name</string>
+    <string name="restaurant_address">Restaurant Address</string>
+    <string name="like">Like</string>
+    <string name="opening_hours">Opening hours:</string>
+    <string name="add_lunch">Add to Lunch</string>
+    <string name="joining_workmates">Joining Workmates:</string>
 </resources>

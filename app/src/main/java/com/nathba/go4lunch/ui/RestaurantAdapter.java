@@ -11,8 +11,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LifecycleOwner;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -23,11 +21,20 @@ import com.nathba.go4lunch.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Adapter for displaying a list of restaurants in a RecyclerView.
+ * Uses the {@link RestaurantViewModel} to observe restaurant-related data and handle interactions.
+ */
 public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.RestaurantViewHolder> {
 
     private final List<Restaurant> restaurantList = new ArrayList<>();
     private final RestaurantViewModel restaurantViewModel;
 
+    /**
+     * Constructor for the RestaurantAdapter.
+     *
+     * @param restaurantViewModel The ViewModel used to observe restaurant-related data.
+     */
     public RestaurantAdapter(RestaurantViewModel restaurantViewModel) {
         this.restaurantViewModel = restaurantViewModel;
     }
@@ -51,18 +58,21 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
     }
 
     /**
-     * Met à jour la liste des restaurants et rafraîchit l'affichage.
+     * Updates the list of restaurants and refreshes the RecyclerView.
      *
-     * @param newRestaurants Nouvelle liste de restaurants.
+     * @param newRestaurants The new list of restaurants to display.
      */
     public void submitList(List<Restaurant> newRestaurants) {
         restaurantList.clear();
         if (newRestaurants != null) {
             restaurantList.addAll(newRestaurants);
         }
-        notifyDataSetChanged(); // Mettre à jour l'affichage
+        notifyDataSetChanged(); // Refresh the display
     }
 
+    /**
+     * ViewHolder class for displaying individual restaurant items in the RecyclerView.
+     */
     static class RestaurantViewHolder extends RecyclerView.ViewHolder {
         private final TextView nameTextView;
         private final TextView addressTextView;
@@ -71,6 +81,12 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
         private final TextView lunchCountTextView;
         private final RestaurantViewModel restaurantViewModel;
 
+        /**
+         * Constructor for the RestaurantViewHolder.
+         *
+         * @param itemView The view representing the individual restaurant item.
+         * @param restaurantViewModel The ViewModel used to observe restaurant-related data.
+         */
         public RestaurantViewHolder(@NonNull View itemView, RestaurantViewModel restaurantViewModel) {
             super(itemView);
             this.restaurantViewModel = restaurantViewModel;
@@ -82,6 +98,12 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
             lunchCountTextView = itemView.findViewById(R.id.lunchCount);
         }
 
+        /**
+         * Binds a restaurant's data to the ViewHolder.
+         * Updates the UI with the restaurant's details and observes lunch count for the restaurant.
+         *
+         * @param restaurant The restaurant to display.
+         */
         public void bind(Restaurant restaurant) {
             nameTextView.setText(restaurant.getName());
             addressTextView.setText(restaurant.getAddress());
@@ -92,7 +114,7 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
                     .into(photoImageView);
 
             if (restaurantViewModel != null) {
-                // Observer les lunchs pour afficher leur nombre
+                // Observe lunch data to display the count of participants
                 restaurantViewModel.getLunchesForRestaurantToday(restaurant.getRestaurantId())
                         .observe((LifecycleOwner) itemView.getContext(), lunches -> {
                             int count = lunches != null ? lunches.size() : 0;
@@ -100,7 +122,7 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
                         });
             }
 
-            // Définir un OnClickListener pour ouvrir les détails du restaurant
+            // Set an OnClickListener to open the restaurant details
             itemView.setOnClickListener(v -> {
                 Bundle bundle = new Bundle();
                 bundle.putString("restaurantId", restaurant.getRestaurantId());

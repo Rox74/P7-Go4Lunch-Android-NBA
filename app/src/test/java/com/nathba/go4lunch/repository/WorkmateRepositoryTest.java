@@ -32,30 +32,61 @@ import org.mockito.MockitoAnnotations;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Unit test class for WorkmateRepository.
+ * Validates interactions with Firestore for managing workmates data.
+ */
 public class WorkmateRepositoryTest {
 
+    /**
+     * Ensures LiveData operations are executed synchronously during tests.
+     */
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
+    /**
+     * Mocked Firestore instance for simulating database operations.
+     */
     @Mock
     private FirebaseFirestore mockFirestore;
 
+    /**
+     * Mocked CollectionReference for the "workmates" collection.
+     */
     @Mock
     private CollectionReference mockCollection;
 
+    /**
+     * Mocked DocumentReference for simulating document-level Firestore operations.
+     */
     @Mock
     private DocumentReference mockDocumentReference;
 
+    /**
+     * Mocked Task for simulating Firestore operations.
+     */
     @Mock
     private Task<DocumentSnapshot> mockDocumentTask;
 
+    /**
+     * Mocked Task for void operations in Firestore.
+     */
     @Mock
     private Task<Void> mockVoidTask;
 
+    /**
+     * Instance of WorkmateRepository being tested.
+     */
     private WorkmateRepository workmateRepository;
 
+    /**
+     * Resource for cleaning up mocks after each test.
+     */
     private AutoCloseable closeable;
 
+    /**
+     * Sets up the test environment by initializing mocks and the repository.
+     */
     @Before
     public void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
@@ -63,11 +94,17 @@ public class WorkmateRepositoryTest {
         workmateRepository = new WorkmateRepository(mockFirestore);
     }
 
+    /**
+     * Cleans up resources and mocks after each test.
+     */
     @After
     public void tearDown() throws Exception {
         closeable.close();
     }
 
+    /**
+     * Tests that `getWorkmates` retrieves a list of workmates successfully.
+     */
     @Test
     public void getWorkmates_shouldReturnWorkmatesSuccessfully() {
         // Given
@@ -100,6 +137,9 @@ public class WorkmateRepositoryTest {
         verify(observer).onChanged(mockWorkmates);
     }
 
+    /**
+     * Tests that `addWorkmate` correctly interacts with Firestore.
+     */
     @Test
     public void addWorkmate_shouldInvokeFirestoreSet() {
         // Given
@@ -114,6 +154,9 @@ public class WorkmateRepositoryTest {
         verify(mockDocumentReference).set(workmate);
     }
 
+    /**
+     * Tests that `getWorkmateById` retrieves a specific workmate successfully.
+     */
     @Test
     public void getWorkmateById_shouldReturnWorkmateSuccessfully() {
         // Given
@@ -126,7 +169,7 @@ public class WorkmateRepositoryTest {
         when(mockCollection.document(workmateId)).thenReturn(mockDocumentReference);
         when(mockDocumentReference.get()).thenReturn(mockTask);
 
-        // Simule un succès
+        // Simulate success
         doAnswer(invocation -> {
             OnSuccessListener<DocumentSnapshot> listener = invocation.getArgument(0);
             when(mockDocumentSnapshot.exists()).thenReturn(true);
@@ -144,6 +187,9 @@ public class WorkmateRepositoryTest {
         verify(observer).onChanged(mockWorkmate);
     }
 
+    /**
+     * Tests that `getWorkmateById` returns null when no workmate is found.
+     */
     @Test
     public void getWorkmateById_shouldReturnNullWhenWorkmateNotFound() {
         // Given
@@ -155,7 +201,7 @@ public class WorkmateRepositoryTest {
         when(mockCollection.document(workmateId)).thenReturn(mockDocumentReference);
         when(mockDocumentReference.get()).thenReturn(mockTask);
 
-        // Simule un succès mais document inexistant
+        // Simulate success but no document found
         doAnswer(invocation -> {
             OnSuccessListener<DocumentSnapshot> listener = invocation.getArgument(0);
             when(mockDocumentSnapshot.exists()).thenReturn(false);
@@ -172,6 +218,9 @@ public class WorkmateRepositoryTest {
         verify(observer).onChanged(null);
     }
 
+    /**
+     * Tests that `getWorkmateById` handles Firestore errors gracefully.
+     */
     @Test
     public void getWorkmateById_shouldHandleFirestoreError() {
         // Given
@@ -183,7 +232,7 @@ public class WorkmateRepositoryTest {
         when(mockCollection.document(workmateId)).thenReturn(mockDocumentReference);
         when(mockDocumentReference.get()).thenReturn(mockTask);
 
-        // Simule l'échec de Firestore avec une exception
+        // Simulate Firestore failure with an exception
         doAnswer(invocation -> {
             OnFailureListener failureListener = invocation.getArgument(0);
             failureListener.onFailure(new Exception("Firestore error"));

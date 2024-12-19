@@ -20,7 +20,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.nathba.go4lunch.R;
-import com.nathba.go4lunch.application.MapViewModel;
 import com.nathba.go4lunch.application.RestaurantViewModel;
 import com.nathba.go4lunch.application.ViewModelFactory;
 import com.nathba.go4lunch.di.AppInjector;
@@ -31,6 +30,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Fragment displaying a list of restaurants.
+ * Implements search and sorting functionality for the restaurant list.
+ */
 public class RestaurantListFragment extends Fragment implements Searchable {
 
     private RestaurantViewModel restaurantViewModel;
@@ -47,23 +50,26 @@ public class RestaurantListFragment extends Fragment implements Searchable {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_restaurant_list, container, false);
 
-        // Utilisez le ViewModelFactory pour instancier MapViewModel et RestaurantViewModel
+        // Initialize ViewModel
         ViewModelFactory viewModelFactory = AppInjector.getInstance().getViewModelFactory();
         restaurantViewModel = new ViewModelProvider(this, viewModelFactory).get(RestaurantViewModel.class);
 
-        // Initialisation de la RecyclerView
+        // Initialize RecyclerView
         recyclerView = view.findViewById(R.id.recyclerView);
         adapter = new RestaurantAdapter(restaurantViewModel);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Observer les données
+        // Observe restaurant data
         observeDetailedRestaurants();
         fetchUserLocationDirectly();
 
         return view;
     }
 
+    /**
+     * Observes detailed restaurant data from the ViewModel and updates the RecyclerView.
+     */
     private void observeDetailedRestaurants() {
         if (restaurantViewModel != null) {
             restaurantViewModel.getDetailedRestaurants().observe(getViewLifecycleOwner(), detailedRestaurants -> {
@@ -84,6 +90,10 @@ public class RestaurantListFragment extends Fragment implements Searchable {
         }
     }
 
+    /**
+     * Fetches the user's current location directly using FusedLocationProviderClient.
+     * Requests location permission if not already granted.
+     */
     private void fetchUserLocationDirectly() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
 
@@ -104,6 +114,11 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                 .addOnFailureListener(e -> Log.e("RestaurantListFragment", "Error getting location", e));
     }
 
+    /**
+     * Filters the restaurant list based on the search query and updates the RecyclerView.
+     *
+     * @param query The search query entered by the user.
+     */
     @Override
     public void onSearch(String query) {
         filteredRestaurantList.clear();
@@ -121,13 +136,18 @@ public class RestaurantListFragment extends Fragment implements Searchable {
         adapter.submitList(filteredRestaurantList);
     }
 
+    /**
+     * Sorts the restaurant list based on the given criterion and updates the RecyclerView.
+     *
+     * @param criterion The sorting criterion, such as "distance", "stars", "a_to_z", or "z_to_a".
+     */
     @Override
     public void onSort(String criterion) {
         switch (criterion) {
             case "distance":
                 Log.d("SortDebug", "User location: " + userLocation);
                 if (userLocation != null) {
-                    // Tri par distance
+                    // Sort by distance
                     Log.d("SortDebug", "User location: Lat=" + userLocation.getLatitude() + ", Lon=" + userLocation.getLongitude());
                     Collections.sort(filteredRestaurantList, new Comparator<Restaurant>() {
                         @Override
@@ -150,7 +170,7 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                             Log.d("SortDebug", "Restaurant: " + r1.getName() + " - Location: " + r1.getLocation());
                             Log.d("SortDebug", "Restaurant: " + r2.getName() + " - Location: " + r2.getLocation());
 
-                            return Float.compare(result1[0], result2[0]); // Tri par distance croissante
+                            return Float.compare(result1[0], result2[0]); // Sort by ascending distance
                         }
                     });
                 } else {
@@ -158,7 +178,7 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                 }
                 break;
             case "stars":
-                // Tri par nombre d'étoiles (rating) décroissant
+                // Sort by rating (descending)
                 Collections.sort(filteredRestaurantList, new Comparator<Restaurant>() {
                     @Override
                     public int compare(Restaurant r1, Restaurant r2) {
@@ -167,7 +187,7 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                 });
                 break;
             case "a_to_z":
-                // Tri par ordre alphabétique croissant (A-Z)
+                // Sort alphabetically (A-Z)
                 Collections.sort(filteredRestaurantList, new Comparator<Restaurant>() {
                     @Override
                     public int compare(Restaurant r1, Restaurant r2) {
@@ -176,7 +196,7 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                 });
                 break;
             case "z_to_a":
-                // Tri par ordre alphabétique décroissant (Z-A)
+                // Sort alphabetically (Z-A)
                 Collections.sort(filteredRestaurantList, new Comparator<Restaurant>() {
                     @Override
                     public int compare(Restaurant r1, Restaurant r2) {
@@ -186,6 +206,6 @@ public class RestaurantListFragment extends Fragment implements Searchable {
                 break;
         }
 
-        adapter.submitList(new ArrayList<>(filteredRestaurantList)); // Rafraîchir l'affichage
+        adapter.submitList(new ArrayList<>(filteredRestaurantList)); // Refresh the list
     }
 }

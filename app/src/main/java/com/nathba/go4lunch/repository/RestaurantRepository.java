@@ -8,7 +8,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.nathba.go4lunch.api.OverpassApi;
 import com.nathba.go4lunch.api.YelpApi;
-import com.nathba.go4lunch.models.Like;
 import com.nathba.go4lunch.models.OverpassResponse;
 import com.nathba.go4lunch.models.Restaurant;
 import com.nathba.go4lunch.models.YelpBusinessResponse;
@@ -25,7 +24,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -298,7 +296,13 @@ public class RestaurantRepository {
         return restaurantsLiveData;
     }
 
-    // Ajouter un like
+    /**
+     * Adds a "like" for a specific restaurant by a user.
+     * The like is stored in the Firestore database.
+     *
+     * @param userId       The unique identifier of the user liking the restaurant.
+     * @param restaurantId The unique identifier of the restaurant being liked.
+     */
     public void addLike(String userId, String restaurantId) {
         String likeId = userId + "_" + restaurantId;
         Map<String, Object> likeData = new HashMap<>();
@@ -308,21 +312,34 @@ public class RestaurantRepository {
         firestore.collection(LIKES_COLLECTION)
                 .document(likeId)
                 .set(likeData)
-                .addOnSuccessListener(aVoid -> Log.d("RestaurantRepository", "Like ajouté avec succès"))
-                .addOnFailureListener(e -> Log.e("RestaurantRepository", "Erreur lors de l'ajout du like", e));
+                .addOnSuccessListener(aVoid -> Log.d("RestaurantRepository", "Like added successfully"))
+                .addOnFailureListener(e -> Log.e("RestaurantRepository", "Error adding like", e));
     }
 
-    // Supprimer un like
+    /**
+     * Removes a "like" for a specific restaurant by a user.
+     * The like is deleted from the Firestore database.
+     *
+     * @param userId       The unique identifier of the user.
+     * @param restaurantId The unique identifier of the restaurant.
+     */
     public void removeLike(String userId, String restaurantId) {
         String likeId = userId + "_" + restaurantId;
         firestore.collection(LIKES_COLLECTION)
                 .document(likeId)
                 .delete()
-                .addOnSuccessListener(aVoid -> Log.d("RestaurantRepository", "Like supprimé avec succès"))
-                .addOnFailureListener(e -> Log.e("RestaurantRepository", "Erreur lors de la suppression du like", e));
+                .addOnSuccessListener(aVoid -> Log.d("RestaurantRepository", "Like removed successfully"))
+                .addOnFailureListener(e -> Log.e("RestaurantRepository", "Error removing like", e));
     }
 
-    // Vérifier si le like existe
+    /**
+     * Checks if a user has liked a specific restaurant.
+     *
+     * @param userId       The unique identifier of the user.
+     * @param restaurantId The unique identifier of the restaurant.
+     * @return A {@link LiveData} object containing a boolean value:
+     *         true if the restaurant is liked by the user, false otherwise.
+     */
     public LiveData<Boolean> isRestaurantLikedByUser(String userId, String restaurantId) {
         MutableLiveData<Boolean> isLiked = new MutableLiveData<>();
         String likeId = userId + "_" + restaurantId;

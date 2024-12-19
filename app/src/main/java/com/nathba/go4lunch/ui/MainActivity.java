@@ -10,6 +10,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -21,6 +23,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -62,12 +65,18 @@ public class MainActivity extends AppCompatActivity {
     private ViewModelFactory viewModelFactory;
     private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1;
 
+    /**
+     * Called when the activity is first created. Sets up the UI, initializes ViewModels,
+     * and manages navigation and authentication state.
+     *
+     * @param savedInstanceState The saved instance state of the activity, if any.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Installer le provider de sécurité
+        // Install security provider
         installSecurityProvider();
 
         // Obtain ViewModelFactory from AppInjector
@@ -95,17 +104,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        // Observe changes in the current user and update the UI accordingly
         mainViewModel.getCurrentUser().observe(this, firebaseUser -> {
             if (firebaseUser != null) {
                 Log.d("MainActivity", "User reconnected, restoring main content...");
-                showMainContent(); // Restaurer les menus et le contenu principal
+                showMainContent(); // Restore menus and main content
             } else {
                 Log.d("MainActivity", "User is null, showing login...");
                 showLoginFragment();
             }
         });
 
-        // Configurer le canal de notification
+        // Create notification channel for Android 8.0 and above
         createNotificationChannel();
 
         // Request POST_NOTIFICATIONS permission for Android 13+
@@ -115,13 +125,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Planification des notifications quotidiennes
+        // Schedule daily notifications
         NotificationScheduler.scheduleDailyNotification(this);
     }
 
     /**
-     * Crée le canal de notification pour les déjeuners.
-     * Nécessaire pour Android 8.0 (API 26) et versions ultérieures.
+     * Creates the notification channel for lunch reminders.
+     * This is required for devices running Android 8.0 (API 26) and above.
      */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -141,6 +151,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Installs the security provider asynchronously to ensure secure network communication.
+     * Displays an error dialog if the installation fails.
+     */
     private void installSecurityProvider() {
         ProviderInstaller.installIfNeededAsync(this, new ProviderInstaller.ProviderInstallListener() {
             @Override
@@ -160,7 +174,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Initializes the UI components.
+     * Initializes the main UI components of the activity.
+     * Sets up references to the DrawerLayout, BottomNavigationView, and NavigationView.
      */
     private void initializeViews() {
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -169,14 +184,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Sets up the DrawerLayout and its toggle.
+     * Configures the DrawerLayout and its toggle for navigation.
+     * Enables the navigation button in the action bar.
      */
     private void setupDrawerLayout() {
         toggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Activez le bouton de navigation dans la barre d'outils
+        // Enable navigation button in the action bar
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
@@ -184,7 +200,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Sets up the BottomNavigationView and its item selection listener.
+     * Sets up the BottomNavigationView and assigns a listener to handle item selection events.
+     * Updates the selected navigation item in the ViewModel.
      */
     private void setupBottomNavigation() {
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
@@ -194,7 +211,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Sets up the NavigationView and its item selection listener.
+     * Sets up the NavigationView and assigns a listener to handle item selection events.
+     * Handles navigation to different fragments such as lunch details, settings, or logout functionality.
      */
     private void setupNavigationView() {
         navigationView.setNavigationItemSelectedListener(item -> {
@@ -212,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
                                 ", restaurantName=" + lunch.getRestaurantName() +
                                 ", restaurantAddress=" + lunch.getRestaurantAddress());
 
+                        // Pass lunch details to RestaurantDetailFragment
                         Bundle bundle = new Bundle();
                         bundle.putString("restaurantId", lunch.getRestaurantId());
                         bundle.putString("restaurantName", lunch.getRestaurantName());
@@ -230,13 +249,13 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             } else if (itemId == R.id.nav_settings) {
-                // Gestion des paramètres
+                // Navigate to settings fragment
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, new SettingsFragment())
                         .addToBackStack(null)
                         .commit();
             } else if (itemId == R.id.nav_logout) {
-                    // Appel de la déconnexion
+                    // Handle logout action
                     Log.d("MainActivity", "Logout initiated...");
                     mainViewModel.signOut(this);
             }
@@ -247,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Observes changes in the ViewModel and updates the UI accordingly.
+     * Monitors the authentication state and selected navigation item.
      */
     private void observeViewModel() {
         mainViewModel.getCurrentUser().observe(this, this::updateUI);
@@ -254,8 +274,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Updates the UI based on the current user.
-     * @param user The currently authenticated FirebaseUser.
+     * Updates the UI based on the current user's authentication state.
+     * Displays the main content if the user is authenticated, or the login screen otherwise.
+     *
+     * @param user The currently authenticated FirebaseUser, or null if no user is signed in.
      */
     private void updateUI(FirebaseUser user) {
         if (user != null) {
@@ -273,33 +295,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Displays the main content of the activity and ensures that LoginFragment is removed.
+     * Displays the main content of the activity, including the navigation components.
+     * Replaces the LoginFragment with the default MapViewFragment.
      */
     private void showMainContent() {
         Log.d("MainActivity", "Restoring main content...");
 
-        // Rendre les composants visibles
+        // Make the navigation components visible
         bottomNavigationView.setVisibility(View.VISIBLE);
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 
         if (getSupportActionBar() != null) {
-            getSupportActionBar().show(); // Affiche la barre d'outils
+            getSupportActionBar().show(); // Show the action bar
         }
 
-        // Réinitialiser le menu pour le drawer
+        // Reset the menu for the navigation drawer
         navigationView.setVisibility(View.VISIBLE);
 
-        // Remplacer le LoginFragment par le fragment principal par défaut
+        // Replace the LoginFragment with the default MapViewFragment
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, new MapViewFragment()) // Map par défaut
+                .replace(R.id.fragment_container, new MapViewFragment()) // Default map view
                 .commit();
 
-        // Invalider et reconstruire les options du menu
+        // Invalidate and rebuild the options menu
         invalidateOptionsMenu();
     }
 
     /**
      * Displays the LoginFragment and hides the main content.
+     * Locks the navigation drawer and hides the action bar.
      */
     private void showLoginFragment() {
         bottomNavigationView.setVisibility(View.GONE);
@@ -315,6 +339,8 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Updates the NavigationView header with the current user's information.
+     * Displays the user's name, email, and profile picture in the header.
+     *
      * @param user The currently authenticated FirebaseUser.
      */
     private void updateNavigationHeader(FirebaseUser user) {
@@ -332,8 +358,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Navigates to the specified fragment based on the selected item ID.
-     * @param itemId The ID of the selected menu item.
+     * Navigates to a specified fragment based on the selected item ID.
+     * Updates the UI by replacing the current fragment with the selected fragment.
+     *
+     * @param itemId The ID of the selected navigation item.
      */
     private void navigateToFragment(int itemId) {
         Fragment selectedFragment = null;
@@ -355,16 +383,23 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, selectedFragment, fragmentTag)
                     .commit();
 
-            // Forcer la mise à jour du menu
-            invalidateOptionsMenu();
+            // Delay menu invalidation to ensure the fragment is ready
+            new Handler(Looper.getMainLooper()).post(this::invalidateOptionsMenu);
         }
     }
 
+    /**
+     * Handles item selection in the options menu.
+     * Passes sorting actions to the current fragment if it implements the Searchable interface.
+     *
+     * @param item The selected menu item.
+     * @return true if the event was handled, false otherwise.
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-        if (toggle.onOptionsItemSelected(item)) { // Relie le clic au bouton de menu
+        if (toggle.onOptionsItemSelected(item)) { // Handles the navigation menu toggle
             return true;
         }
 
@@ -387,34 +422,44 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Called after {@link #onCreate(Bundle)} to perform final initialization.
+     * Ensures the DrawerToggle state is synchronized with the drawer layout.
+     *
+     * @param savedInstanceState The saved instance state of the activity, if any.
+     */
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         if (toggle != null) {
-            toggle.syncState(); // Synchronise après la création
+            toggle.syncState(); // Synchronize after creation
         }
     }
 
+    /**
+     * Initializes the options menu and configures its visibility and behavior
+     * based on the active fragment.
+     *
+     * @param menu The options menu in which items are placed.
+     * @return true if the menu should be displayed, false otherwise.
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
 
-        // Récupérer le fragment actif
+        // Get the active fragment
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-        // Contrôler les items du menu
-        MenuItem searchItem = menu.findItem(R.id.action_search); // Loupe
-        MenuItem sortItem = menu.findItem(R.id.action_sort);     // Bouton de tri
-
-        // Vérifiez si le fragment actif est valide
+        // Check if the active fragment is valid
         if (currentFragment == null) {
-            Log.e("MenuError", "Fragment actif non trouvé");
-            searchItem.setVisible(false);
-            sortItem.setVisible(false);
-            return true;
+            Log.e("MenuError", "Active fragment not found");
+            return true; // No menu to display
         }
 
-        // Contrôler la visibilité des items en fonction du fragment actif
+        // Configure menu icons based on the active fragment
+        MenuItem searchItem = menu.findItem(R.id.action_search); // Search icon
+        MenuItem sortItem = menu.findItem(R.id.action_sort);     // Sort icon
+
         if (currentFragment instanceof RestaurantListFragment) {
             searchItem.setVisible(true);
             sortItem.setVisible(true);
@@ -426,12 +471,11 @@ public class MainActivity extends AppCompatActivity {
             sortItem.setVisible(false);
         }
 
-        // Configurer le SearchView pour les fragments implémentant l'interface Searchable
+        // Configure SearchView for fragments implementing the Searchable interface
         if (currentFragment instanceof Searchable) {
-            androidx.appcompat.widget.SearchView searchView = (androidx.appcompat.widget.SearchView) searchItem.getActionView();
-
-            // Configurer les actions de recherche
-            searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+            SearchView searchView = (SearchView) searchItem.getActionView();
+            assert searchView != null;
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
                     ((Searchable) currentFragment).onSearch(query);
@@ -450,43 +494,53 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Transmet la recherche au fragment visible.
+     * Passes the search query to the currently visible fragment, if it implements the Searchable interface.
      *
-     * @param query Texte de la recherche.
+     * @param query The search text entered by the user.
      */
     private void handleSearchQuery(String query) {
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
         if (currentFragment instanceof Searchable) {
-            ((Searchable) currentFragment).onSearch(query); // Appelle l'interface implémentée par les fragments
+            ((Searchable) currentFragment).onSearch(query); // Calls the Searchable interface method in the fragment
         }
     }
 
+    /**
+     * Configures notification preferences based on user settings.
+     * Enables or disables daily notifications for the application.
+     */
     private void setupNotificationPreference() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        // Observer la préférence pour activer/désactiver les notifications
+        // Observe the preference for enabling/disabling notifications
         boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", true);
         if (notificationsEnabled) {
             NotificationScheduler.scheduleDailyNotification(this);
-            Log.d("MainActivity", "Notifications activées");
+            Log.d("MainActivity", "Notifications enabled");
         } else {
             WorkManager.getInstance(this).cancelUniqueWork("DailyNotification");
-            Log.d("MainActivity", "Notifications désactivées");
+            Log.d("MainActivity", "Notifications disabled");
         }
     }
 
+    /**
+     * Attaches a new base context with the preferred application language.
+     * Applies the selected language to the app's configuration.
+     *
+     * @param newBase The new base context for the activity.
+     */
     @Override
     protected void attachBaseContext(Context newBase) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(newBase);
         String languageCode = prefs.getString("app_language", "default");
 
-        // Gérer la langue par défaut du système
+        // Handle the system default language
         if (languageCode.equals("default")) {
             languageCode = Resources.getSystem().getConfiguration().locale.getLanguage();
         }
 
-        // Appliquer la nouvelle langue
+        // Apply the new language
         Locale locale = new Locale(languageCode);
         Locale.setDefault(locale);
 
@@ -497,12 +551,20 @@ public class MainActivity extends AppCompatActivity {
         super.attachBaseContext(context);
     }
 
+    /**
+     * Called when the activity is resumed.
+     * Ensures notification preferences are applied.
+     */
     @Override
     protected void onResume() {
         super.onResume();
-        setupNotificationPreference(); // Vérifie les préférences des notifications
+        setupNotificationPreference(); // Checks notification preferences
     }
 
+    /**
+     * Called when the activity is destroyed.
+     * Removes observers from the ViewModel to prevent memory leaks.
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();

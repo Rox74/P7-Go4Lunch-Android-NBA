@@ -42,6 +42,14 @@ public class LoginFragment extends Fragment {
     private MainViewModel mainViewModel;
     private ViewModelFactory viewModelFactory;
 
+    /**
+     * Called to have the fragment instantiate its user interface view.
+     *
+     * @param inflater  The LayoutInflater object that can be used to inflate views in the fragment.
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return The View for the fragment's UI, or null.
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_login, container, false);
@@ -93,16 +101,17 @@ public class LoginFragment extends Fragment {
             signInLauncher.launch(signInIntent);
         });
 
+        // Observe the authentication state from AuthViewModel
         authViewModel.getUserLiveData().observe(getViewLifecycleOwner(), firebaseUser -> {
             if (firebaseUser != null) {
                 Log.d(TAG, "User is signed in: " + firebaseUser.getEmail());
 
-                // Redirige vers le MainFragment ou un autre écran principal
+                // Navigate to the main fragment or another primary screen
                 requireActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new MapViewFragment()) // Remplace par ton fragment principal
+                        .replace(R.id.fragment_container, new MapViewFragment()) // Replace with your primary fragment
                         .commit();
 
-                // Optionnel : Nettoyer la pile de retour pour éviter de revenir sur la page de connexion
+                // Optionally clear the back stack to prevent returning to the login screen
                 requireActivity().getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
             } else {
                 Log.d(TAG, "User is not signed in.");

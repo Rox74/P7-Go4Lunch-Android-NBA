@@ -6,8 +6,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import android.location.Location;
-
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
@@ -32,44 +30,84 @@ import java.util.List;
 
 import org.mockito.MockitoAnnotations;
 
+/**
+ * Unit test class for the MapViewModel.
+ * Verifies the interactions between the MapViewModel and its repositories.
+ */
 public class MapViewModelTest {
 
+    /**
+     * Rule to ensure LiveData operations execute synchronously during testing.
+     */
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
+    /**
+     * Mocked repository for handling map-related data.
+     */
     @Mock
     private MapRepository mapRepository;
 
+    /**
+     * Mocked repository for handling lunch-related data.
+     */
     @Mock
     private LunchRepository lunchRepository;
 
+    /**
+     * Mocked repository for handling restaurant-related data.
+     */
     @Mock
     private RestaurantRepository restaurantRepository;
 
+    /**
+     * Mocked observer for observing selected restaurant updates.
+     */
     @Mock
     private Observer<Restaurant> selectedRestaurantObserver;
 
+    /**
+     * Mocked observer for observing detailed restaurant updates.
+     */
     @Mock
     private Observer<List<Restaurant>> detailedRestaurantsObserver;
 
+    /**
+     * Mocked observer for observing today's lunches updates.
+     */
     @Mock
     private Observer<List<Lunch>> lunchesTodayObserver;
 
+    /**
+     * Instance of the ViewModel under test.
+     */
     private MapViewModel mapViewModel;
 
+    /**
+     * AutoCloseable resource to release mocks after each test.
+     */
     private AutoCloseable closeable;
 
+    /**
+     * Sets up the test environment, initializing mocks and the ViewModel.
+     */
     @Before
     public void setup() {
         closeable = MockitoAnnotations.openMocks(this);
         mapViewModel = new MapViewModel(mapRepository, lunchRepository, restaurantRepository);
     }
 
+    /**
+     * Cleans up resources after each test.
+     */
     @After
     public void tearDown() throws Exception {
         closeable.close();
     }
 
+    /**
+     * Tests if `loadRestaurants` calls the repository with the correct coordinates.
+     */
     @Test
     public void loadRestaurants_shouldCallRepositoryWithCorrectCoordinates() {
         // Given
@@ -83,6 +121,9 @@ public class MapViewModelTest {
         verify(mapRepository).loadRestaurants(latitude, longitude);
     }
 
+    /**
+     * Tests if `fetchRestaurantDetails` retrieves and updates the selected restaurant successfully.
+     */
     @Test
     public void fetchRestaurantDetails_shouldReturnSelectedRestaurant() {
         // Given
@@ -104,6 +145,9 @@ public class MapViewModelTest {
         verify(selectedRestaurantObserver).onChanged(restaurant);
     }
 
+    /**
+     * Tests if `fetchRestaurantDetails` handles errors and updates the selected restaurant with basic data.
+     */
     @Test
     public void fetchRestaurantDetails_onError_shouldReturnBasicRestaurant() {
         // Given
@@ -129,6 +173,9 @@ public class MapViewModelTest {
         verify(selectedRestaurantObserver).onChanged(basicRestaurant);
     }
 
+    /**
+     * Tests if `fetchRestaurantsDetailsIfNeeded` calls the repository and updates LiveData with detailed restaurants.
+     */
     @Test
     public void fetchRestaurantsDetailsIfNeeded_shouldCallRepositoryAndUpdateLiveData() {
         // Given
@@ -150,6 +197,9 @@ public class MapViewModelTest {
         verify(detailedRestaurantsObserver).onChanged(restaurants);
     }
 
+    /**
+     * Tests if `loadLunchesToday` calls the repository and updates LiveData with today's lunches.
+     */
     @Test
     public void loadLunchesToday_shouldCallRepositoryAndUpdateLiveData() {
         // Given

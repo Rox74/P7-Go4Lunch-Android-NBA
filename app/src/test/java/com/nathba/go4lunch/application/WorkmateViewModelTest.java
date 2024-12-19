@@ -19,24 +19,49 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 
+/**
+ * Unit test class for the WorkmateViewModel.
+ * Ensures interactions with WorkmateRepository and correct LiveData behavior.
+ */
 public class WorkmateViewModelTest {
 
+    /**
+     * Rule to execute LiveData tasks synchronously in test cases.
+     */
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
+    /**
+     * Mocked repository for managing workmate data.
+     */
     @Mock
     private WorkmateRepository workmateRepository;
 
+    /**
+     * Mocked observer for observing a list of workmates.
+     */
     @Mock
     private Observer<List<Workmate>> workmatesObserver;
 
+    /**
+     * Mocked observer for observing a single workmate.
+     */
     @Mock
     private Observer<Workmate> workmateObserver;
 
+    /**
+     * ViewModel instance under test.
+     */
     private WorkmateViewModel workmateViewModel;
 
+    /**
+     * AutoCloseable resource to release mocks after each test.
+     */
     private AutoCloseable closeable;
 
+    /**
+     * Initializes mocks and the ViewModel before each test.
+     */
     @Before
     public void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
@@ -49,11 +74,17 @@ public class WorkmateViewModelTest {
         workmateViewModel = new WorkmateViewModel(workmateRepository);
     }
 
+    /**
+     * Cleans up resources and mocks after each test.
+     */
     @After
     public void tearDown() throws Exception {
         closeable.close();
     }
 
+    /**
+     * Tests that `getWorkmateById` retrieves a specific workmate and updates the observer.
+     */
     @Test
     public void getWorkmateById_shouldReturnWorkmate() {
         // Given
@@ -72,6 +103,9 @@ public class WorkmateViewModelTest {
         verify(workmateObserver).onChanged(workmate);
     }
 
+    /**
+     * Tests that `addWorkmate` invokes the repository method to add a new workmate.
+     */
     @Test
     public void addWorkmate_shouldCallRepositoryAddWorkmate() {
         // Given

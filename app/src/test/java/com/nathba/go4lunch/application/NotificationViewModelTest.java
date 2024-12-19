@@ -22,32 +22,61 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 
+/**
+ * Unit test class for the NotificationViewModel.
+ * Verifies the interactions between the NotificationViewModel and the NotificationRepository.
+ */
 public class NotificationViewModelTest {
 
+    /**
+     * Rule to ensure LiveData operations execute synchronously during testing.
+     */
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
+    /**
+     * Mocked repository for handling notification data.
+     */
     @Mock
     private NotificationRepository notificationRepository;
 
+    /**
+     * Mocked observer for observing notification data updates.
+     */
     @Mock
     private Observer<NotificationData> notificationDataObserver;
 
+    /**
+     * Instance of the ViewModel under test.
+     */
     private NotificationViewModel notificationViewModel;
 
+    /**
+     * AutoCloseable resource to release mocks after each test.
+     */
     private AutoCloseable closeable;
 
+    /**
+     * Sets up the test environment, initializing mocks and the ViewModel.
+     */
     @Before
     public void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
         notificationViewModel = new NotificationViewModel(notificationRepository);
     }
 
+    /**
+     * Cleans up resources after each test.
+     */
     @After
     public void tearDown() throws Exception {
         closeable.close();
     }
 
+    /**
+     * Tests if `getNotificationData` fetches data successfully from the repository
+     * and updates the observer with the correct notification data.
+     */
     @Test
     public void getNotificationData_shouldReturnDataSuccessfully() {
         // Given
@@ -71,6 +100,9 @@ public class NotificationViewModelTest {
         verify(notificationDataObserver).onChanged(mockNotificationData);
     }
 
+    /**
+     * Tests if `getNotificationData` avoids redundant fetches when data has already been retrieved.
+     */
     @Test
     public void getNotificationData_shouldNotFetchAgainIfAlreadyFetched() {
         // Given
@@ -90,6 +122,9 @@ public class NotificationViewModelTest {
         verify(notificationRepository, times(1)).getNotificationData(userId);
     }
 
+    /**
+     * Tests if `getNotificationData` handles null data gracefully and updates the observer with null.
+     */
     @Test
     public void getNotificationData_withNullData_shouldHandleGracefully() {
         // Given

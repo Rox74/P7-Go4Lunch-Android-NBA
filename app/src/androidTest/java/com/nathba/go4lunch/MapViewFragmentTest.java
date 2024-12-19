@@ -5,7 +5,6 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
-import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 import android.os.SystemClock;
 
@@ -22,85 +21,110 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+/**
+ * Instrumented test class for the MapViewFragment.
+ * Verifies UI behavior and interactions within the map view, including navigation and marker clicks.
+ */
 @RunWith(AndroidJUnit4.class)
 public class MapViewFragmentTest {
 
+    /**
+     * Rule to launch the MainActivity for testing scenarios.
+     */
     @Rule
     public ActivityScenarioRule<MainActivity> activityScenarioRule =
             new ActivityScenarioRule<>(MainActivity.class);
 
+    /**
+     * Setup method executed before each test.
+     * Ensures the user is logged in by simulating the Google sign-in process if necessary.
+     *
+     * @throws InterruptedException if the thread sleep is interrupted.
+     */
     @Before
     public void setUp() throws InterruptedException {
-        // Vérifier si l'utilisateur est sur la page de connexion au démarrage
         if (isOnLoginScreen()) {
-            // Simuler la connexion Google
             performGoogleSignIn();
         }
     }
 
+    /**
+     * Checks if the current screen is the login screen.
+     *
+     * @return True if the login screen is displayed, otherwise false.
+     */
     private boolean isOnLoginScreen() {
-        // Vérifier si l'écran de connexion est affiché
         try {
             onView(withId(R.id.google_sign_in_button)).check(matches(isDisplayed()));
             return true;
         } catch (NoMatchingViewException e) {
-            // Si l'élément n'est pas trouvé, cela signifie que nous ne sommes pas sur la page de connexion
-            return false;
+            return false; // Not on the login screen
         }
     }
 
+    /**
+     * Simulates the Google sign-in process by interacting with the Google account selection screen.
+     *
+     * @throws InterruptedException if the thread sleep is interrupted.
+     */
     private void performGoogleSignIn() throws InterruptedException {
-        // Simuler le clic sur le bouton de connexion Google
         onView(withId(R.id.google_sign_in_button)).perform(click());
 
-        // Attendre 2 secondes pour la fenêtre de sélection du compte Google
+        // Wait for the Google account selection screen
         Thread.sleep(2000);
 
-        // Simuler un clic au centre de l'écran pour sélectionner le compte Google
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
         int y = (int) (device.getDisplayHeight() / 2.1);
         int y2 = (int) (device.getDisplayHeight() / 1.7);
 
-        device.click(x, y);  // Clic au centre de l'écran
+        // Simulate clicking on the account selection
+        device.click(x, y);
 
-        // Attendre 5 secondes pour la fenêtre de localisation
+        // Wait for the location permission dialog
         Thread.sleep(5000);
 
-        // Simuler un clic au centre de l'écran pour la validation de la localisation
+        // Simulate clicking to confirm location permissions
         device.click(x, y2);
     }
 
+    /**
+     * Tests that the MapViewFragment displays correctly.
+     * Verifies the presence of the map view and geolocation button.
+     */
     @Test
     public void testMapViewFragment_DisplaysCorrectly() {
-        // Ouvrir le fragment MapView via la navigation
         onView(withId(R.id.bottom_navigation)).perform(click());
         onView(withId(R.id.nav_map_view)).perform(click());
 
-        // Vérifier que les éléments de la carte sont bien affichés
+        // Verify map elements are displayed
         onView(withId(R.id.mapview)).check(matches(isDisplayed()));
         onView(withId(R.id.btn_geolocate)).check(matches(isDisplayed()));
     }
 
+    /**
+     * Tests that clicking on a restaurant marker opens the restaurant details screen.
+     * Simulates user interaction with a marker and checks the details fragment.
+     */
     @Test
     public void testMarkerClick_OpensRestaurantDetails() {
-        // Ouvrir le fragment MapView
         onView(withId(R.id.bottom_navigation)).perform(click());
         onView(withId(R.id.nav_map_view)).perform(click());
 
-        // Ajouter un délai pour laisser le temps aux marqueurs d'apparaître
-        SystemClock.sleep(3000); // Attendre 3 secondes
+        // Wait for markers to appear on the map
+        SystemClock.sleep(3000);
 
-        // Simuler un clic sur un marqueur de restaurant
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         int x = device.getDisplayWidth() / 2;
         int y = device.getDisplayHeight() / 2;
-        device.click(x, y);  // Clic au centre de l'écran sur un marqueur
 
-        // Ajouter un autre délai pour laisser le temps au fragment de détails de s'afficher
-        SystemClock.sleep(5000); // Attendre 5 secondes
+        // Simulate clicking a marker
+        device.click(x, y);
 
-        // Vérifier que les détails du restaurant s'affichent
+        // Wait for the restaurant details screen to load
+        SystemClock.sleep(5000);
+
+        // Verify restaurant details elements are displayed
         onView(withId(R.id.restaurant_name)).check(matches(isDisplayed()));
         onView(withId(R.id.restaurant_address)).check(matches(isDisplayed()));
         onView(withId(R.id.restaurant_image)).check(matches(isDisplayed()));

@@ -29,6 +29,12 @@ public class WorkmateAdapter extends RecyclerView.Adapter<WorkmateAdapter.Workma
     private List<Workmate> workmates;
     private List<Lunch> lunches;
 
+    /**
+     * Constructor for initializing the adapter with a list of workmates and their lunches.
+     *
+     * @param workmates List of workmates to display.
+     * @param lunches   List of lunches associated with the workmates.
+     */
     public WorkmateAdapter(List<Workmate> workmates, List<Lunch> lunches) {
         this.workmates = workmates;
         this.lunches = lunches;
@@ -52,35 +58,59 @@ public class WorkmateAdapter extends RecyclerView.Adapter<WorkmateAdapter.Workma
         return workmates.size();
     }
 
+    /**
+     * Updates the list of workmates and refreshes the adapter.
+     *
+     * @param newWorkmates Updated list of workmates.
+     */
     public void updateWorkmates(List<Workmate> newWorkmates) {
         this.workmates = newWorkmates;
         notifyDataSetChanged();
     }
 
+    /**
+     * Updates the list of lunches and refreshes the adapter.
+     *
+     * @param newLunches Updated list of lunches.
+     */
     public void updateLunches(List<Lunch> newLunches) {
         this.lunches = newLunches;
         notifyDataSetChanged();
     }
 
+    /**
+     * ViewHolder class for binding workmate data to the corresponding UI components.
+     */
     static class WorkmateViewHolder extends RecyclerView.ViewHolder {
 
         private TextView nameTextView;
         private ImageView photoImageView;
 
+        /**
+         * Constructor for initializing the ViewHolder with item views.
+         *
+         * @param itemView The layout view for a single workmate item.
+         */
         public WorkmateViewHolder(@NonNull View itemView) {
             super(itemView);
             nameTextView = itemView.findViewById(R.id.name_text_view);
             photoImageView = itemView.findViewById(R.id.photo_image_view);
         }
 
+        /**
+         * Binds the workmate and lunch data to the UI components.
+         *
+         * @param workmate The workmate data to display.
+         * @param lunches  The list of lunches to determine the restaurant selection.
+         */
         public void bind(Workmate workmate, List<Lunch> lunches) {
-            Context context = itemView.getContext(); // Contexte nécessaire pour accéder aux ressources
+            Context context = itemView.getContext(); // Context for accessing resources
             String text;
 
-            // Par défaut, texte indiquant qu'aucun restaurant n'a été sélectionné
+            // Default text indicating no restaurant has been selected
             text = context.getString(R.string.no_restaurant_selected, workmate.getName());
 
-            // Vérifiez si le workmate a un déjeuner correspondant
+            // Check if the workmate has a lunch associated
             if (lunches != null) {
                 for (Lunch lunch : lunches) {
                     if (lunch.getWorkmateId().equals(workmate.getWorkmateId())) {
@@ -90,25 +120,31 @@ public class WorkmateAdapter extends RecyclerView.Adapter<WorkmateAdapter.Workma
                     }
                 }
             } else {
-                itemView.setOnClickListener(null); // Aucun clic actif si aucun restaurant
+                itemView.setOnClickListener(null); // Disable click if no restaurant
             }
 
-            // Définir le texte final pour le nameTextView
+            // Set the final text for the nameTextView
             nameTextView.setText(text);
 
-            // Toujours gérer l'image de profil, indépendamment du déjeuner
+            // Always handle profile image, regardless of lunch
             if (workmate.getPhotoUrl() != null && !workmate.getPhotoUrl().isEmpty()) {
                 Glide.with(photoImageView.getContext())
                         .load(workmate.getPhotoUrl())
-                        .placeholder(R.drawable.profile_picture) // Placeholder pendant le chargement
-                        .error(R.drawable.profile_picture)       // Image par défaut en cas d'erreur
-                        .transform(new CircleCrop()) // Transformation en image ronde
+                        .placeholder(R.drawable.profile_picture) // Placeholder while loading
+                        .error(R.drawable.profile_picture)       // Default image on error
+                        .transform(new CircleCrop()) // Round image transformation
                         .into(photoImageView);
             } else {
-                photoImageView.setImageResource(R.drawable.profile_picture); // Image par défaut si aucun lien
+                photoImageView.setImageResource(R.drawable.profile_picture); // Default image if no URL
             }
         }
 
+        /**
+         * Navigates to the restaurant detail fragment when a workmate's lunch is clicked.
+         *
+         * @param context The context used for fragment navigation.
+         * @param lunch   The lunch data containing the selected restaurant details.
+         */
         private void navigateToRestaurantDetail(Context context, Lunch lunch) {
             Bundle bundle = new Bundle();
             bundle.putString("restaurantId", lunch.getRestaurantId());

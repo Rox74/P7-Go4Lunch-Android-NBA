@@ -21,27 +21,55 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+/**
+ * Unit test class for MainViewModel.
+ * Verifies the interaction between MainViewModel and its repositories.
+ */
 public class MainViewModelTest {
 
+    /**
+     * Rule to allow LiveData to execute synchronously during tests.
+     */
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
+    /**
+     * Mocked instance of MainRepository to simulate repository operations.
+     */
     @Mock
     private MainRepository mainRepository;
 
+    /**
+     * Mocked instance of AuthRepository to handle authentication-related operations.
+     */
     @Mock
     private AuthRepository authRepository;
 
+    /**
+     * Mocked instance of FirebaseUser representing a logged-in user.
+     */
     @Mock
     private FirebaseUser mockUser;
 
+    /**
+     * Mocked instance of Context for repository operations requiring a context.
+     */
     @Mock
     private Context mockContext;
 
+    /**
+     * Instance of MainViewModel under test.
+     */
     private MainViewModel mainViewModel;
 
+    /**
+     * AutoCloseable resource to close mocks after each test.
+     */
     private AutoCloseable closeable;
 
+    /**
+     * Sets up the test environment by initializing mocks and configuring repository behaviors.
+     */
     @Before
     public void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
@@ -55,11 +83,17 @@ public class MainViewModelTest {
         mainViewModel = new MainViewModel(mainRepository, authRepository);
     }
 
+    /**
+     * Cleans up resources after each test.
+     */
     @After
     public void tearDown() throws Exception {
         closeable.close();
     }
 
+    /**
+     * Verifies that `getCurrentUser` retrieves the current user from the repository.
+     */
     @Test
     public void getCurrentUser_shouldReturnCurrentUser() {
         // Act
@@ -70,6 +104,9 @@ public class MainViewModelTest {
         verify(mainRepository).getCurrentUser();
     }
 
+    /**
+     * Tests that setting the selected navigation item updates the corresponding LiveData.
+     */
     @Test
     public void setSelectedNavigationItem_shouldUpdateLiveData() {
         // Arrange
@@ -84,6 +121,9 @@ public class MainViewModelTest {
                 mainViewModel.getSelectedNavigationItem().getValue().intValue());
     }
 
+    /**
+     * Verifies that `checkLoginState` invokes the repository method to check the user's login state.
+     */
     @Test
     public void checkLoginState_shouldInvokeRepositoryCheckLoginState() {
         // Act
@@ -93,6 +133,9 @@ public class MainViewModelTest {
         verify(mainRepository).checkLoginState();
     }
 
+    /**
+     * Verifies that adding a workmate to Firestore calls the appropriate repository method.
+     */
     @Test
     public void addWorkmateToFirestore_shouldCallRepositoryAddWorkmate() {
         // Act
@@ -102,6 +145,9 @@ public class MainViewModelTest {
         verify(mainRepository).addWorkmateToFirestore(mockUser);
     }
 
+    /**
+     * Verifies that signing out calls the repository method to revoke access and sign out.
+     */
     @Test
     public void signOut_shouldCallRevokeAccessAndSignOut() {
         // Act

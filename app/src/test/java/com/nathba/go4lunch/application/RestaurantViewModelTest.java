@@ -23,38 +23,74 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Unit test class for the RestaurantViewModel.
+ * Validates interactions with RestaurantRepository and LunchRepository
+ * and ensures correct LiveData updates.
+ */
 public class RestaurantViewModelTest {
 
+    /**
+     * Rule to execute LiveData tasks synchronously in test cases.
+     */
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
+    /**
+     * Mocked repository for managing restaurant data.
+     */
     @Mock
     private RestaurantRepository restaurantRepository;
 
+    /**
+     * Mocked repository for managing lunch data.
+     */
     @Mock
     private LunchRepository lunchRepository;
 
+    /**
+     * Mocked observer for observing restaurant data.
+     */
     @Mock
     private Observer<List<Restaurant>> restaurantObserver;
 
+    /**
+     * Mocked observer for observing lunch data.
+     */
     @Mock
     private Observer<List<Lunch>> lunchObserver;
 
+    /**
+     * ViewModel instance under test.
+     */
     private RestaurantViewModel restaurantViewModel;
 
+    /**
+     * AutoCloseable resource to release mocks after each test.
+     */
     private AutoCloseable closeable;
 
+    /**
+     * Initializes the test environment, mocks, and ViewModel instance.
+     */
     @Before
     public void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
         restaurantViewModel = new RestaurantViewModel(restaurantRepository, lunchRepository);
     }
 
+    /**
+     * Cleans up resources and mocks after each test.
+     */
     @After
     public void tearDown() throws Exception {
         closeable.close();
     }
 
+    /**
+     * Tests that `getLunchesForRestaurantToday` retrieves lunch data for a specific restaurant
+     * and updates the observer.
+     */
     @Test
     public void testGetLunchesForRestaurantToday() {
         // Given
@@ -74,6 +110,9 @@ public class RestaurantViewModelTest {
         verify(lunchObserver).onChanged(lunches);
     }
 
+    /**
+     * Tests that `addLunch` invokes the repository method to add lunch data.
+     */
     @Test
     public void testAddLunch() {
         // Given
@@ -86,6 +125,10 @@ public class RestaurantViewModelTest {
         verify(lunchRepository).addLunch(lunch);
     }
 
+    /**
+     * Tests that `getRestaurants` fetches restaurant data based on location
+     * and updates the observer.
+     */
     @Test
     public void testGetRestaurants() {
         // Given
@@ -106,6 +149,9 @@ public class RestaurantViewModelTest {
         verify(restaurantObserver).onChanged(restaurants);
     }
 
+    /**
+     * Tests that `addRestaurant` adds a new restaurant to Firestore through the repository.
+     */
     @Test
     public void testAddRestaurant() {
         // Given
@@ -118,6 +164,10 @@ public class RestaurantViewModelTest {
         verify(restaurantRepository).addRestaurantToFirestore(restaurant);
     }
 
+    /**
+     * Tests that `fetchRestaurantDetailsBulk` fetches detailed restaurant data
+     * and updates the observer with the results.
+     */
     @Test
     public void testFetchRestaurantDetailsBulk() {
         // Given
@@ -137,6 +187,10 @@ public class RestaurantViewModelTest {
         verify(restaurantObserver).onChanged(restaurants);
     }
 
+    /**
+     * Tests that `getDetailedRestaurants` retrieves cached restaurant data
+     * and updates the observer.
+     */
     @Test
     public void testGetDetailedRestaurants() {
         // Given

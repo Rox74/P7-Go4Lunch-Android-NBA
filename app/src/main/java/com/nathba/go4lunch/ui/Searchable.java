@@ -1,17 +1,21 @@
 package com.nathba.go4lunch.ui;
 
+/**
+ * Interface defining searchable and sortable behaviors for fragments or components.
+ */
 public interface Searchable {
 
     /**
-     * Gère la recherche en fonction du texte saisi.
+     * Handles search functionality based on the input text.
      *
-     * @param query Texte de la recherche.
+     * @param query The search text entered by the user.
      */
     void onSearch(String query);
 
     /**
-     * Gère le tri des restaurants en fonction d'un critère.
-     * @param criterion
+     * Handles sorting of items (e.g., restaurants) based on a specified criterion.
+     *
+     * @param criterion The sorting criterion (e.g., "distance", "rating").
      */
     void onSort(String criterion);
 }
